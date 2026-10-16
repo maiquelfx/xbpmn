@@ -1,0 +1,464 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.8.1">
+  <collaboration id="Collaboration_1">
+    <participant id="Participant_Usuario" name="Usuário" processRef="Process_Usuario" />
+    <participant id="Participant_Suporte1" name="Suporte Nível 1" processRef="Process_Suporte1" />
+    <participant id="Participant_Suporte2" name="Suporte Nível 2" processRef="Process_Suporte2" />
+    <participant id="Participant_Infra" name="Equipe de Infraestrutura" processRef="Process_Infra" />
+    <messageFlow id="Flow_AbreChamado" sourceRef="Event_InicioChamado" targetRefRef="Event_RecebeChamado" />
+    <messageFlow id="Flow_EscalaN2" sourceRef="Event_Timer4h" targetRefRef="Event_RecebeN2" />
+    <messageFlow id="Flow_AcionaInfra" sourceRef="Task_AcionarInfra" targetRefRef="Event_RecebeInfra" />
+    <messageFlow id="Flow_RetornoInfra" sourceRef="Task_ResolverInfra" targetRefRef="Task_AvaliarProblema" />
+    <messageFlow id="Flow_EnviaSolucao" sourceRef="Task_EncerrarN2" targetRefRef="Event_RecebeSolucao" />
+    <messageFlow id="Flow_RejeitaSolucao" sourceRef="Task_RejeitarSolucao" targetRefRef="Event_RecebeRejeicao" />
+    <messageFlow id="Flow_RevisaSolucao" sourceRef="Task_RevisarSolucao" targetRefRef="Event_RecebeSolucao" />
+  </collaboration>
+  <process id="Process_Usuario" isExecutable="false">
+    <startEvent id="Event_InicioChamado" name="Abrir Chamado de TI">
+      <outgoing>Flow_1</outgoing>
+    </startEvent>
+    <task id="Task_AvaliarSolucao" name="Avaliar Solução Proposta">
+      <incoming>Flow_RecebeSolucaoSeq</incoming>
+      <outgoing>Flow_2</outgoing>
+    </task>
+    <exclusiveGateway id="Gateway_Avaliacao" name="Solução Aceita?">
+      <incoming>Flow_2</incoming>
+      <outgoing>Flow_Aceito</outgoing>
+      <outgoing>Flow_Rejeitado</outgoing>
+    </exclusiveGateway>
+    <task id="Task_RejeitarSolucao" name="Rejeitar Solução e Justificar">
+      <incoming>Flow_Rejeitado</incoming>
+      <outgoing>Flow_3</outgoing>
+    </task>
+    <task id="Task_ConfirmarSolucao" name="Confirmar e Fechar Chamado">
+      <incoming>Flow_Aceito</incoming>
+      <outgoing>Flow_4</outgoing>
+    </task>
+    <endEvent id="Event_FimUsuario" name="Chamado Encerrado">
+      <incoming>Flow_4</incoming>
+    </endEvent>
+    <intermediateCatchEvent id="Event_RecebeSolucao" name="Solução Recebida">
+      <incoming>Flow_1</incoming>
+      <incoming>Flow_RebeRejeicaoSeq</incoming>
+      <outgoing>Flow_RecebeSolucaoSeq</outgoing>
+      <messageEventDefinition id="MessageEventDefinition_1" />
+    </intermediateCatchEvent>
+    <intermediateCatchEvent id="Event_RecebeRejeicao" name="Retorno Revisão">
+      <incoming>Flow_3</incoming>
+      <outgoing>Flow_RebeRejeicaoSeq</outgoing>
+      <messageEventDefinition id="MessageEventDefinition_2" />
+    </intermediateCatchEvent>
+    <sequenceFlow id="Flow_1" sourceRef="Event_InicioChamado" targetRef="Event_RecebeSolucao" />
+    <sequenceFlow id="Flow_RecebeSolucaoSeq" sourceRef="Event_RecebeSolucao" targetRef="Task_AvaliarSolucao" />
+    <sequenceFlow id="Flow_2" sourceRef="Task_AvaliarSolucao" targetRef="Gateway_Avaliacao" />
+    <sequenceFlow id="Flow_Aceito" name="Sim" sourceRef="Gateway_Avaliacao" targetRef="Task_ConfirmarSolucao" />
+    <sequenceFlow id="Flow_Rejeitado" name="Não" sourceRef="Gateway_Avaliacao" targetRef="Task_RejeitarSolucao" />
+    <sequenceFlow id="Flow_3" sourceRef="Task_RejeitarSolucao" targetRef="Event_RecebeRejeicao" />
+    <sequenceFlow id="Flow_RebeRejeicaoSeq" sourceRef="Event_RecebeRejeicao" targetRef="Event_RecebeSolucao" />
+    <sequenceFlow id="Flow_4" sourceRef="Task_ConfirmarSolucao" targetRef="Event_FimUsuario" />
+  </process>
+  <process id="Process_Suporte1" isExecutable="false">
+    <startEvent id="Event_RecebeChamado" name="Chamado Recebido">
+      <outgoing>Flow_5</outgoing>
+      <messageEventDefinition id="MessageEventDefinition_3" />
+    </startEvent>
+    <task id="Task_AnalisarN1" name="Analisar e Tentar Resolver">
+      <incoming>Flow_5</incoming>
+      <outgoing>Flow_6</outgoing>
+    </task>
+    <exclusiveGateway id="Gateway_N1" name="Resolvido em 4h?">
+      <incoming>Flow_6</incoming>
+      <outgoing>Flow_ResolvidoN1</outgoing>
+      <outgoing>Flow_NaoResolvidoN1</outgoing>
+    </exclusiveGateway>
+    <endEvent id="Event_FimN1" name="Chamado Resolvido N1">
+      <incoming>Flow_ResolvidoN1</incoming>
+    </endEvent>
+    <endEvent id="Event_EscaladoN2" name="Escalado para N2">
+      <incoming>Flow_NaoResolvidoN1Seq</incoming>
+    </endEvent>
+    <boundaryEvent id="Event_Timer4h" name="Prazo 4 Horas" cancelActivity="true" attachedToRefId="Task_AnalisarN1">
+      <outgoing>Flow_NaoResolvidoN1Seq</outgoing>
+      <timerEventDefinition id="TimerEventDefinition_1" />
+    </boundaryEvent>
+    <sequenceFlow id="Flow_5" sourceRef="Event_RecebeChamado" targetRef="Task_AnalisarN1" />
+    <sequenceFlow id="Flow_6" sourceRef="Task_AnalisarN1" targetRef="Gateway_N1" />
+    <sequenceFlow id="Flow_ResolvidoN1" name="Sim" sourceRef="Gateway_N1" targetRef="Event_FimN1" />
+    <sequenceFlow id="Flow_NaoResolvidoN1" name="Não (Manual)" sourceRef="Gateway_N1" targetRef="Event_EscaladoN2" />
+    <sequenceFlow id="Flow_NaoResolvidoN1Seq" sourceRef="Event_Timer4h" targetRef="Event_EscaladoN2" />
+  </process>
+  <process id="Process_Suporte2" isExecutable="false">
+    <startEvent id="Event_RecebeN2" name="Chamado Escalado">
+      <outgoing>Flow_7</outgoing>
+      <messageEventDefinition id="MessageEventDefinition_4" />
+    </startEvent>
+    <task id="Task_AvaliarProblema" name="Avaliar Tipo de Problema">
+      <incoming>Flow_7</incoming>
+      <incoming>Flow_RetornoRevisaoSeq</incoming>
+      <outgoing>Flow_8</outgoing>
+    </task>
+    <exclusiveGateway id="Gateway_TipoProblema" name="É Infraestrutura?">
+      <incoming>Flow_8</incoming>
+      <outgoing>Flow_SimInfra</outgoing>
+      <outgoing>Flow_NaoInfra</outgoing>
+    </exclusiveGateway>
+    <task id="Task_AcionarInfra" name="Acionar Equipe de Infraestrutura">
+      <incoming>Flow_SimInfra</incoming>
+      <outgoing>Flow_9</outgoing>
+    </task>
+    <task id="Task_ResolverDireto" name="Resolver Diretamente">
+      <incoming>Flow_NaoInfra</incoming>
+      <outgoing>Flow_10</outgoing>
+    </task>
+    <exclusiveGateway id="Gateway_JoinN2">
+      <incoming>Flow_9</incoming>
+      <incoming>Flow_10</incoming>
+      <outgoing>Flow_11</outgoing>
+    </exclusiveGateway>
+    <task id="Task_EncerrarN2" name="Enviar Solução para Usuário">
+      <incoming>Flow_11</incoming>
+      <outgoing>Flow_12</outgoing>
+    </task>
+    <intermediateCatchEvent id="Event_RecebeRejeicaoN2" name="Rejeição Recebida">
+      <incoming>Flow_12</incoming>
+      <outgoing>Flow_13</outgoing>
+      <messageEventDefinition id="MessageEventDefinition_5" />
+    </intermediateCatchEvent>
+    <task id="Task_RevisarSolucao" name="Revisar Solução">
+      <incoming>Flow_13</incoming>
+      <outgoing>Flow_RetornoRevisaoSeq</outgoing>
+    </task>
+    <sequenceFlow id="Flow_7" sourceRef="Event_RecebeN2" targetRef="Task_AvaliarProblema" />
+    <sequenceFlow id="Flow_8" sourceRef="Task_AvaliarProblema" targetRef="Gateway_TipoProblema" />
+    <sequenceFlow id="Flow_SimInfra" name="Sim" sourceRef="Gateway_TipoProblema" targetRef="Task_AcionarInfra" />
+    <sequenceFlow id="Flow_NaoInfra" name="Não" sourceRef="Gateway_TipoProblema" targetRef="Task_ResolverDireto" />
+    <sequenceFlow id="Flow_9" sourceRef="Task_AcionarInfra" targetRef="Gateway_JoinN2" />
+    <sequenceFlow id="Flow_10" sourceRef="Task_ResolverDireto" targetRef="Gateway_JoinN2" />
+    <sequenceFlow id="Flow_11" sourceRef="Gateway_JoinN2" targetRef="Task_EncerrarN2" />
+    <sequenceFlow id="Flow_12" sourceRef="Task_EncerrarN2" targetRef="Event_RecebeRejeicaoN2" />
+    <sequenceFlow id="Flow_13" sourceRef="Event_RecebeRejeicaoN2" targetRef="Task_RevisarSolucao" />
+    <sequenceFlow id="Flow_RetornoRevisaoSeq" sourceRef="Task_RevisarSolucao" targetRef="Task_AvaliarProblema" />
+  </process>
+  <process id="Process_Infra" isExecutable="false">
+    <startEvent id="Event_RecebeInfra" name="Demanda Recebida">
+      <outgoing>Flow_14</outgoing>
+      <messageEventDefinition id="MessageEventDefinition_6" />
+    </startEvent>
+    <task id="Task_ResolverInfra" name="Resolver Problema de Infraestrutura">
+      <incoming>Flow_14</incoming>
+      <outgoing>Flow_15</outgoing>
+    </task>
+    <endEvent id="Event_FimInfra" name="Infraestrutura Resolvida">
+      <incoming>Flow_15</incoming>
+    </endEvent>
+    <sequenceFlow id="Flow_14" sourceRef="Event_RecebeInfra" targetRef="Task_ResolverInfra" />
+    <sequenceFlow id="Flow_15" sourceRef="Task_ResolverInfra" targetRef="Event_FimInfra" />
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_1">
+      <bpmndi:BPMNShape id="Participant_Usuario_di" bpmnElement="Participant_Usuario" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="1450" height="250" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_Suporte1_di" bpmnElement="Participant_Suporte1" isHorizontal="true">
+        <dc:Bounds x="160" y="350" width="1450" height="250" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_Suporte2_di" bpmnElement="Participant_Suporte2" isHorizontal="true">
+        <dc:Bounds x="160" y="620" width="1450" height="300" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_Infra_di" bpmnElement="Participant_Infra" isHorizontal="true">
+        <dc:Bounds x="160" y="940" width="1450" height="200" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_4_di" bpmnElement="Flow_4">
+        <di:waypoint x="1460" y="170" />
+        <di:waypoint x="1522" y="170" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_3">
+        <di:waypoint x="1190" y="240" />
+        <di:waypoint x="1190" y="270" />
+        <di:waypoint x="680" y="270" />
+        <di:waypoint x="680" y="228" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Rejeitado_di" bpmnElement="Flow_Rejeitado">
+        <di:waypoint x="1000" y="145" />
+        <di:waypoint x="1000" y="200" />
+        <di:waypoint x="1140" y="200" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1005" y="170" width="21" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Aceito_di" bpmnElement="Flow_Aceito">
+        <di:waypoint x="1025" y="120" />
+        <di:waypoint x="1360" y="120" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1184" y="102" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2">
+        <di:waypoint x="910" y="120" />
+        <di:waypoint x="975" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_RecebeSolucaoSeq_di" bpmnElement="Flow_RecebeSolucaoSeq">
+        <di:waypoint x="698" y="120" />
+        <di:waypoint x="810" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1">
+        <di:waypoint x="258" y="120" />
+        <di:waypoint x="662" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_RebeRejeicaoSeq_di" bpmnElement="Flow_RebeRejeicaoSeq">
+        <di:waypoint x="680" y="192" />
+        <di:waypoint x="680" y="138" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Event_InicioChamado_di" bpmnElement="Event_InicioChamado">
+        <dc:Bounds x="222" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="207" y="145" width="67" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_AvaliarSolucao_di" bpmnElement="Task_AvaliarSolucao">
+        <dc:Bounds x="810" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Avaliacao_di" bpmnElement="Gateway_Avaliacao" isMarkerVisible="true">
+        <dc:Bounds x="975" y="95" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="962" y="71" width="76" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_RejeitarSolucao_di" bpmnElement="Task_RejeitarSolucao">
+        <dc:Bounds x="1140" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ConfirmarSolucao_di" bpmnElement="Task_ConfirmarSolucao">
+        <dc:Bounds x="1360" y="130" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_FimUsuario_di" bpmnElement="Event_FimUsuario">
+        <dc:Bounds x="1522" y="152" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1514" y="195" width="53" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_RecebeSolucao_di" bpmnElement="Event_RecebeSolucao">
+        <dc:Bounds x="662" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="656" y="78" width="48" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_RecebeRejeicao_di" bpmnElement="Event_RecebeRejeicao">
+        <dc:Bounds x="662" y="192" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="638" y="235" width="84" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_NaoResolvidoN1Seq_di" bpmnElement="Flow_NaoResolvidoN1Seq">
+        <di:waypoint x="380" y="498" />
+        <di:waypoint x="380" y="550" />
+        <di:waypoint x="562" y="550" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_NaoResolvidoN1_di" bpmnElement="Flow_NaoResolvidoN1">
+        <di:waypoint x="505" y="465" />
+        <di:waypoint x="580" y="465" />
+        <di:waypoint x="580" y="532" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="515" y="447" width="65" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ResolvidoN1_di" bpmnElement="Flow_ResolvidoN1">
+        <di:waypoint x="480" y="440" />
+        <di:waypoint x="480" y="398" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="486" y="416" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_6_di" bpmnElement="Flow_6">
+        <di:waypoint x="390" y="465" />
+        <di:waypoint x="455" y="465" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_5_di" bpmnElement="Flow_5">
+        <di:waypoint x="258" y="465" />
+        <di:waypoint x="290" y="465" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Event_RecebeChamado_di" bpmnElement="Event_RecebeChamado">
+        <dc:Bounds x="222" y="447" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="214" y="490" width="53" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_AnalisarN1_di" bpmnElement="Task_AnalisarN1">
+        <dc:Bounds x="290" y="425" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_N1_di" bpmnElement="Gateway_N1" isMarkerVisible="true">
+        <dc:Bounds x="455" y="440" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="439" y="497" width="83" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_FimN1_di" bpmnElement="Event_FimN1">
+        <dc:Bounds x="462" y="362" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="444" y="325" width="72" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_EscaladoN2_di" bpmnElement="Event_EscaladoN2">
+        <dc:Bounds x="562" y="532" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="537" y="575" width="87" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_Timer4h_di" bpmnElement="Event_Timer4h">
+        <dc:Bounds x="362" y="487" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="307" y="523" width="67" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_RetornoRevisaoSeq_di" bpmnElement="Flow_RetornoRevisaoSeq">
+        <di:waypoint x="1350" y="830" />
+        <di:waypoint x="1350" y="890" />
+        <di:waypoint x="510" y="890" />
+        <di:waypoint x="510" y="730" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_13_di" bpmnElement="Flow_13">
+        <di:waypoint x="1228" y="790" />
+        <di:waypoint x="1300" y="790" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_12_di" bpmnElement="Flow_12">
+        <di:waypoint x="1140" y="710" />
+        <di:waypoint x="1140" y="790" />
+        <di:waypoint x="1192" y="790" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_11_di" bpmnElement="Flow_11">
+        <di:waypoint x="995" y="670" />
+        <di:waypoint x="1090" y="670" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_10_di" bpmnElement="Flow_10">
+        <di:waypoint x="850" y="750" />
+        <di:waypoint x="970" y="750" />
+        <di:waypoint x="970" y="695" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_9_di" bpmnElement="Flow_9">
+        <di:waypoint x="850" y="670" />
+        <di:waypoint x="945" y="670" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_NaoInfra_di" bpmnElement="Flow_NaoInfra">
+        <di:waypoint x="680" y="695" />
+        <di:waypoint x="680" y="750" />
+        <di:waypoint x="750" y="750" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="685" y="720" width="21" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_SimInfra_di" bpmnElement="Flow_SimInfra">
+        <di:waypoint x="705" y="670" />
+        <di:waypoint x="750" y="670" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="718" y="652" width="19" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_8_di" bpmnElement="Flow_8">
+        <di:waypoint x="560" y="670" />
+        <di:waypoint x="655" y="670" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_7_di" bpmnElement="Flow_7">
+        <di:waypoint x="408" y="670" />
+        <di:waypoint x="460" y="670" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Event_RecebeN2_di" bpmnElement="Event_RecebeN2">
+        <dc:Bounds x="372" y="652" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="359" y="695" width="63" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_AvaliarProblema_di" bpmnElement="Task_AvaliarProblema">
+        <dc:Bounds x="460" y="630" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_TipoProblema_di" bpmnElement="Gateway_TipoProblema" isMarkerVisible="true">
+        <dc:Bounds x="655" y="645" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="638" y="621" width="85" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_AcionarInfra_di" bpmnElement="Task_AcionarInfra">
+        <dc:Bounds x="750" y="630" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ResolverDireto_di" bpmnElement="Task_ResolverDireto">
+        <dc:Bounds x="750" y="710" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_JoinN2_di" bpmnElement="Gateway_JoinN2" isMarkerVisible="true">
+        <dc:Bounds x="945" y="645" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_EncerrarN2_di" bpmnElement="Task_EncerrarN2">
+        <dc:Bounds x="1090" y="630" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_RecebeRejeicaoN2_di" bpmnElement="Event_RecebeRejeicaoN2">
+        <dc:Bounds x="1192" y="772" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1169" y="815" width="82" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_RevisarSolucao_di" bpmnElement="Task_RevisarSolucao">
+        <dc:Bounds x="1300" y="750" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_15_di" bpmnElement="Flow_15">
+        <di:waypoint x="910" y="1038" />
+        <di:waypoint x="972" y="1038" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_14_di" bpmnElement="Flow_14">
+        <di:waypoint x="758" y="1038" />
+        <di:waypoint x="810" y="1038" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Event_RecebeInfra_di" bpmnElement="Event_RecebeInfra">
+        <dc:Bounds x="722" y="1020" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="708" y="1063" width="65" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ResolverInfra_di" bpmnElement="Task_ResolverInfra">
+        <dc:Bounds x="810" y="998" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_FimInfra_di" bpmnElement="Event_FimInfra">
+        <dc:Bounds x="972" y="1020" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="958" y="1063" width="65" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_AbreChamado_di" bpmnElement="Flow_AbreChamado">
+        <di:waypoint x="240" y="138" />
+        <di:waypoint x="240" y="447" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_EscalaN2_di" bpmnElement="Flow_EscalaN2">
+        <di:waypoint x="380" y="523" />
+        <di:waypoint x="380" y="588" />
+        <di:waypoint x="390" y="588" />
+        <di:waypoint x="390" y="652" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_AcionaInfra_di" bpmnElement="Flow_AcionaInfra">
+        <di:waypoint x="800" y="710" />
+        <di:waypoint x="800" y="865" />
+        <di:waypoint x="740" y="865" />
+        <di:waypoint x="740" y="1020" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_RetornoInfra_di" bpmnElement="Flow_RetornoInfra">
+        <di:waypoint x="860" y="998" />
+        <di:waypoint x="860" y="930" />
+        <di:waypoint x="530" y="930" />
+        <di:waypoint x="530" y="710" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_EnviaSolucao_di" bpmnElement="Flow_EnviaSolucao">
+        <di:waypoint x="1110" y="630" />
+        <di:waypoint x="1110" y="375" />
+        <di:waypoint x="680" y="375" />
+        <di:waypoint x="680" y="138" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_RejeitaSolucao_di" bpmnElement="Flow_RejeitaSolucao">
+        <di:waypoint x="1190" y="240" />
+        <di:waypoint x="1190" y="506" />
+        <di:waypoint x="1210" y="506" />
+        <di:waypoint x="1210" y="772" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_RevisaSolucao_di" bpmnElement="Flow_RevisaSolucao">
+        <di:waypoint x="1350" y="750" />
+        <di:waypoint x="1350" y="460" />
+        <di:waypoint x="680" y="460" />
+        <di:waypoint x="680" y="138" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

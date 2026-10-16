@@ -1,0 +1,370 @@
+<?xml version='1.0' encoding='utf-8'?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:collaboration id="Collaboration_1">
+    <bpmn:participant id="Participant_lane_user" name="Usuário" processRef="Process_lane_user" />
+    <bpmn:participant id="Participant_lane_sup1" name="Suporte Nível 1" processRef="Process_lane_sup1" />
+    <bpmn:participant id="Participant_lane_sup2" name="Suporte Nível 2" processRef="Process_lane_sup2" />
+    <bpmn:participant id="Participant_lane_infra" name="Equipe de Infraestrutura" processRef="Process_lane_infra" />
+    <bpmn:messageFlow id="MessageFlow_task_send_req_msg_recv_req" sourceRef="task_send_req" targetRef="msg_recv_req" />
+    <bpmn:messageFlow id="MessageFlow_task_resolvido_n1_msg_recv_solucao" sourceRef="task_resolvido_n1" targetRef="msg_recv_solucao" />
+    <bpmn:messageFlow id="MessageFlow_send_escalar_msg_recv_n2" sourceRef="send_escalar" targetRef="msg_recv_n2" />
+    <bpmn:messageFlow id="MessageFlow_send_infra_msg_recv_infra" sourceRef="send_infra" targetRef="msg_recv_infra" />
+    <bpmn:messageFlow id="MessageFlow_send_infra_resp_msg_recv_infra_resp" sourceRef="send_infra_resp" targetRef="msg_recv_infra_resp" />
+    <bpmn:messageFlow id="MessageFlow_send_solucao_user_msg_recv_solucao" sourceRef="send_solucao_user" targetRef="msg_recv_solucao" />
+    <bpmn:messageFlow id="MessageFlow_send_rejeicao_msg_recv_rejeicao" sourceRef="send_rejeicao" targetRef="msg_recv_rejeicao" />
+    <bpmn:messageFlow id="MessageFlow_send_nova_solucao_msg_recv_solucao" sourceRef="send_nova_solucao" targetRef="msg_recv_solucao" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_lane_user" isExecutable="false">
+    <bpmn:startEvent id="start1" name="Abrir Chamado de TI" />
+    <bpmn:sendTask id="task_send_req" name="Enviar Chamado" />
+    <bpmn:intermediateCatchEvent id="msg_recv_solucao" name="Receber Notificação de Solução">
+      <bpmn:messageEventDefinition />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="task_avaliar_solucao" name="Testar e Avaliar Solução" />
+    <bpmn:exclusiveGateway id="gateway_aceite" name="Usuário Aceitou?" />
+    <bpmn:sendTask id="send_rejeicao" name="Enviar Rejeição da Solução" />
+    <bpmn:task id="task_aceite_final" name="Registrar Aceite Final" />
+    <bpmn:endEvent id="end_sucesso" name="Chamado Encerrado com Sucesso">
+      <bpmn:messageEventDefinition />
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_start1_task_send_req" sourceRef="start1" targetRef="task_send_req" />
+    <bpmn:sequenceFlow id="Flow_msg_recv_solucao_task_avaliar_solucao" sourceRef="msg_recv_solucao" targetRef="task_avaliar_solucao" />
+    <bpmn:sequenceFlow id="Flow_task_avaliar_solucao_gateway_aceite" sourceRef="task_avaliar_solucao" targetRef="gateway_aceite" />
+    <bpmn:sequenceFlow id="Flow_gateway_aceite_send_rejeicao" sourceRef="gateway_aceite" targetRef="send_rejeicao" name="Não" />
+    <bpmn:sequenceFlow id="Flow_gateway_aceite_task_aceite_final" sourceRef="gateway_aceite" targetRef="task_aceite_final" name="Sim" />
+    <bpmn:sequenceFlow id="Flow_task_aceite_final_end_sucesso" sourceRef="task_aceite_final" targetRef="end_sucesso" />
+  </bpmn:process>
+  <bpmn:process id="Process_lane_sup1" isExecutable="false">
+    <bpmn:intermediateCatchEvent id="msg_recv_req" name="Receber Chamado">
+      <bpmn:messageEventDefinition />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="task_analise1" name="Analisar Chamado N1" />
+    <bpmn:intermediateCatchEvent id="timer_limite" name="Prazo de 4 Horas">
+      <bpmn:timerEventDefinition />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="gateway_resolvido" name="Resolvido em 4h?" />
+    <bpmn:task id="task_resolvido_n1" name="Registrar Solução Parcial" />
+    <bpmn:sendTask id="send_escalar" name="Escalar para Nível 2" />
+    <bpmn:sequenceFlow id="Flow_msg_recv_req_task_analise1" sourceRef="msg_recv_req" targetRef="task_analise1" />
+    <bpmn:sequenceFlow id="Flow_task_analise1_timer_limite" sourceRef="task_analise1" targetRef="timer_limite" />
+    <bpmn:sequenceFlow id="Flow_timer_limite_gateway_resolvido" sourceRef="timer_limite" targetRef="gateway_resolvido" />
+    <bpmn:sequenceFlow id="Flow_gateway_resolvido_task_resolvido_n1" sourceRef="gateway_resolvido" targetRef="task_resolvido_n1" name="Sim" />
+    <bpmn:sequenceFlow id="Flow_gateway_resolvido_send_escalar" sourceRef="gateway_resolvido" targetRef="send_escalar" name="Não (Timeout)" />
+  </bpmn:process>
+  <bpmn:process id="Process_lane_sup2" isExecutable="false">
+    <bpmn:intermediateCatchEvent id="msg_recv_n2" name="Receber Chamado Escalado">
+      <bpmn:messageEventDefinition />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="task_analise_n2" name="Avaliar Problema N2" />
+    <bpmn:exclusiveGateway id="gateway_tipo" name="Problema de Infra?" />
+    <bpmn:sendTask id="send_infra" name="Acionar Infraestrutura" />
+    <bpmn:intermediateCatchEvent id="msg_recv_infra_resp" name="Receber Resposta Infra">
+      <bpmn:messageEventDefinition />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="task_resolver_n2" name="Finalizar Solução N2" />
+    <bpmn:sendTask id="send_solucao_user" name="Enviar Solução ao Usuário" />
+    <bpmn:intermediateCatchEvent id="msg_recv_rejeicao" name="Receber Rejeição">
+      <bpmn:messageEventDefinition />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="task_revisar" name="Revisar Chamado Rejeitado" />
+    <bpmn:sendTask id="send_nova_solucao" name="Enviar Solução Revisada" />
+    <bpmn:sequenceFlow id="Flow_msg_recv_n2_task_analise_n2" sourceRef="msg_recv_n2" targetRef="task_analise_n2" />
+    <bpmn:sequenceFlow id="Flow_task_analise_n2_gateway_tipo" sourceRef="task_analise_n2" targetRef="gateway_tipo" />
+    <bpmn:sequenceFlow id="Flow_gateway_tipo_send_infra" sourceRef="gateway_tipo" targetRef="send_infra" name="Sim" />
+    <bpmn:sequenceFlow id="Flow_msg_recv_infra_resp_task_resolver_n2" sourceRef="msg_recv_infra_resp" targetRef="task_resolver_n2" />
+    <bpmn:sequenceFlow id="Flow_gateway_tipo_task_resolver_n2" sourceRef="gateway_tipo" targetRef="task_resolver_n2" name="Não" />
+    <bpmn:sequenceFlow id="Flow_task_resolver_n2_send_solucao_user" sourceRef="task_resolver_n2" targetRef="send_solucao_user" />
+    <bpmn:sequenceFlow id="Flow_msg_recv_rejeicao_task_revisar" sourceRef="msg_recv_rejeicao" targetRef="task_revisar" />
+    <bpmn:sequenceFlow id="Flow_task_revisar_send_nova_solucao" sourceRef="task_revisar" targetRef="send_nova_solucao" />
+  </bpmn:process>
+  <bpmn:process id="Process_lane_infra" isExecutable="false">
+    <bpmn:intermediateCatchEvent id="msg_recv_infra" name="Receber Demanda Infra">
+      <bpmn:messageEventDefinition />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:serviceTask id="task_exec_infra" name="Corrigir Problema Infra" />
+    <bpmn:sendTask id="send_infra_resp" name="Enviar Resposta Infra" />
+    <bpmn:sequenceFlow id="Flow_msg_recv_infra_task_exec_infra" sourceRef="msg_recv_infra" targetRef="task_exec_infra" />
+    <bpmn:sequenceFlow id="Flow_task_exec_infra_send_infra_resp" sourceRef="task_exec_infra" targetRef="send_infra_resp" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_1">
+      <bpmndi:BPMNShape id="Participant_lane_user_di" bpmnElement="Participant_lane_user" isHorizontal="true">
+        <dc:Bounds x="100" y="80" width="2980" height="240" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_lane_sup1_di" bpmnElement="Participant_lane_sup1" isHorizontal="true">
+        <dc:Bounds x="100" y="340" width="2980" height="240" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_lane_sup2_di" bpmnElement="Participant_lane_sup2" isHorizontal="true">
+        <dc:Bounds x="100" y="600" width="2980" height="240" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_lane_infra_di" bpmnElement="Participant_lane_infra" isHorizontal="true">
+        <dc:Bounds x="100" y="860" width="2980" height="150" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="start1_di" bpmnElement="start1">
+        <dc:Bounds x="180" y="182" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_send_req_di" bpmnElement="task_send_req">
+        <dc:Bounds x="360" y="160" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="msg_recv_req_di" bpmnElement="msg_recv_req">
+        <dc:Bounds x="540" y="442" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_analise1_di" bpmnElement="task_analise1">
+        <dc:Bounds x="720" y="420" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="timer_limite_di" bpmnElement="timer_limite">
+        <dc:Bounds x="900" y="442" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="gateway_resolvido_di" bpmnElement="gateway_resolvido">
+        <dc:Bounds x="1080" y="435" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_resolvido_n1_di" bpmnElement="task_resolvido_n1">
+        <dc:Bounds x="1260" y="375" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="send_escalar_di" bpmnElement="send_escalar">
+        <dc:Bounds x="1260" y="465" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="msg_recv_solucao_di" bpmnElement="msg_recv_solucao">
+        <dc:Bounds x="1440" y="182" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="msg_recv_n2_di" bpmnElement="msg_recv_n2">
+        <dc:Bounds x="1440" y="702" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_avaliar_solucao_di" bpmnElement="task_avaliar_solucao">
+        <dc:Bounds x="1620" y="160" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_analise_n2_di" bpmnElement="task_analise_n2">
+        <dc:Bounds x="1620" y="680" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="gateway_aceite_di" bpmnElement="gateway_aceite">
+        <dc:Bounds x="1800" y="175" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="gateway_tipo_di" bpmnElement="gateway_tipo">
+        <dc:Bounds x="1800" y="695" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="send_rejeicao_di" bpmnElement="send_rejeicao">
+        <dc:Bounds x="1980" y="115" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_aceite_final_di" bpmnElement="task_aceite_final">
+        <dc:Bounds x="1980" y="205" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="send_infra_di" bpmnElement="send_infra">
+        <dc:Bounds x="1980" y="635" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_resolver_n2_di" bpmnElement="task_resolver_n2">
+        <dc:Bounds x="1980" y="725" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="msg_recv_rejeicao_di" bpmnElement="msg_recv_rejeicao">
+        <dc:Bounds x="2160" y="657" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="send_solucao_user_di" bpmnElement="send_solucao_user">
+        <dc:Bounds x="2160" y="725" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="end_sucesso_di" bpmnElement="end_sucesso">
+        <dc:Bounds x="2160" y="182" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="msg_recv_infra_di" bpmnElement="msg_recv_infra">
+        <dc:Bounds x="2160" y="917" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_revisar_di" bpmnElement="task_revisar">
+        <dc:Bounds x="2340" y="680" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_exec_infra_di" bpmnElement="task_exec_infra">
+        <dc:Bounds x="2340" y="895" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="send_nova_solucao_di" bpmnElement="send_nova_solucao">
+        <dc:Bounds x="2520" y="680" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="send_infra_resp_di" bpmnElement="send_infra_resp">
+        <dc:Bounds x="2520" y="895" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="msg_recv_infra_resp_di" bpmnElement="msg_recv_infra_resp">
+        <dc:Bounds x="2700" y="702" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_start1_task_send_req_di" bpmnElement="Flow_start1_task_send_req">
+        <di:waypoint x="216" y="200" />
+        <di:waypoint x="360" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_msg_recv_req_task_analise1_di" bpmnElement="Flow_msg_recv_req_task_analise1">
+        <di:waypoint x="576" y="460" />
+        <di:waypoint x="720" y="460" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_task_analise1_timer_limite_di" bpmnElement="Flow_task_analise1_timer_limite">
+        <di:waypoint x="840" y="460" />
+        <di:waypoint x="900" y="460" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_timer_limite_gateway_resolvido_di" bpmnElement="Flow_timer_limite_gateway_resolvido">
+        <di:waypoint x="936" y="460" />
+        <di:waypoint x="1080" y="460" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_gateway_resolvido_task_resolvido_n1_di" bpmnElement="Flow_gateway_resolvido_task_resolvido_n1">
+        <di:waypoint x="1130" y="452" />
+        <di:waypoint x="1160" y="452" />
+        <di:waypoint x="1190" y="452" />
+        <di:waypoint x="1190" y="407" />
+        <di:waypoint x="1230" y="407" />
+        <di:waypoint x="1260" y="407" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_gateway_resolvido_send_escalar_di" bpmnElement="Flow_gateway_resolvido_send_escalar">
+        <di:waypoint x="1130" y="467" />
+        <di:waypoint x="1160" y="467" />
+        <di:waypoint x="1199" y="467" />
+        <di:waypoint x="1199" y="512" />
+        <di:waypoint x="1230" y="512" />
+        <di:waypoint x="1260" y="512" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_msg_recv_n2_task_analise_n2_di" bpmnElement="Flow_msg_recv_n2_task_analise_n2">
+        <di:waypoint x="1476" y="720" />
+        <di:waypoint x="1620" y="720" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_task_analise_n2_gateway_tipo_di" bpmnElement="Flow_task_analise_n2_gateway_tipo">
+        <di:waypoint x="1740" y="720" />
+        <di:waypoint x="1800" y="720" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_gateway_tipo_send_infra_di" bpmnElement="Flow_gateway_tipo_send_infra">
+        <di:waypoint x="1850" y="712" />
+        <di:waypoint x="1880" y="712" />
+        <di:waypoint x="1910" y="712" />
+        <di:waypoint x="1910" y="667" />
+        <di:waypoint x="1950" y="667" />
+        <di:waypoint x="1980" y="667" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_msg_recv_infra_task_exec_infra_di" bpmnElement="Flow_msg_recv_infra_task_exec_infra">
+        <di:waypoint x="2196" y="935" />
+        <di:waypoint x="2340" y="935" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_task_exec_infra_send_infra_resp_di" bpmnElement="Flow_task_exec_infra_send_infra_resp">
+        <di:waypoint x="2460" y="935" />
+        <di:waypoint x="2520" y="935" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_msg_recv_infra_resp_task_resolver_n2_di" bpmnElement="Flow_msg_recv_infra_resp_task_resolver_n2">
+        <di:waypoint x="2736" y="715" />
+        <di:waypoint x="2787" y="715" />
+        <di:waypoint x="2787" y="673" />
+        <di:waypoint x="1929" y="673" />
+        <di:waypoint x="1929" y="760" />
+        <di:waypoint x="1980" y="760" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_gateway_tipo_task_resolver_n2_di" bpmnElement="Flow_gateway_tipo_task_resolver_n2">
+        <di:waypoint x="1850" y="732" />
+        <di:waypoint x="1880" y="732" />
+        <di:waypoint x="1922" y="732" />
+        <di:waypoint x="1922" y="777" />
+        <di:waypoint x="1950" y="777" />
+        <di:waypoint x="1980" y="777" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_task_resolver_n2_send_solucao_user_di" bpmnElement="Flow_task_resolver_n2_send_solucao_user">
+        <di:waypoint x="2100" y="765" />
+        <di:waypoint x="2160" y="765" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_msg_recv_solucao_task_avaliar_solucao_di" bpmnElement="Flow_msg_recv_solucao_task_avaliar_solucao">
+        <di:waypoint x="1476" y="200" />
+        <di:waypoint x="1620" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_task_avaliar_solucao_gateway_aceite_di" bpmnElement="Flow_task_avaliar_solucao_gateway_aceite">
+        <di:waypoint x="1740" y="200" />
+        <di:waypoint x="1800" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_gateway_aceite_send_rejeicao_di" bpmnElement="Flow_gateway_aceite_send_rejeicao">
+        <di:waypoint x="1850" y="192" />
+        <di:waypoint x="1880" y="192" />
+        <di:waypoint x="1910" y="192" />
+        <di:waypoint x="1910" y="147" />
+        <di:waypoint x="1950" y="147" />
+        <di:waypoint x="1980" y="147" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_msg_recv_rejeicao_task_revisar_di" bpmnElement="Flow_msg_recv_rejeicao_task_revisar">
+        <di:waypoint x="2196" y="675" />
+        <di:waypoint x="2226" y="675" />
+        <di:waypoint x="2268" y="675" />
+        <di:waypoint x="2268" y="720" />
+        <di:waypoint x="2310" y="720" />
+        <di:waypoint x="2340" y="720" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_task_revisar_send_nova_solucao_di" bpmnElement="Flow_task_revisar_send_nova_solucao">
+        <di:waypoint x="2460" y="720" />
+        <di:waypoint x="2520" y="720" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_gateway_aceite_task_aceite_final_di" bpmnElement="Flow_gateway_aceite_task_aceite_final">
+        <di:waypoint x="1850" y="207" />
+        <di:waypoint x="1880" y="207" />
+        <di:waypoint x="1919" y="207" />
+        <di:waypoint x="1919" y="252" />
+        <di:waypoint x="1950" y="252" />
+        <di:waypoint x="1980" y="252" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_task_aceite_final_end_sucesso_di" bpmnElement="Flow_task_aceite_final_end_sucesso">
+        <di:waypoint x="2100" y="245" />
+        <di:waypoint x="2130" y="245" />
+        <di:waypoint x="2130" y="245" />
+        <di:waypoint x="2130" y="200" />
+        <di:waypoint x="2130" y="200" />
+        <di:waypoint x="2160" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_task_send_req_msg_recv_req_di" bpmnElement="MessageFlow_task_send_req_msg_recv_req">
+        <di:waypoint x="480" y="200" />
+        <di:waypoint x="510" y="200" />
+        <di:waypoint x="510" y="200" />
+        <di:waypoint x="510" y="460" />
+        <di:waypoint x="510" y="460" />
+        <di:waypoint x="540" y="460" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_task_resolvido_n1_msg_recv_solucao_di" bpmnElement="MessageFlow_task_resolvido_n1_msg_recv_solucao">
+        <di:waypoint x="1380" y="405" />
+        <di:waypoint x="1410" y="405" />
+        <di:waypoint x="1404" y="405" />
+        <di:waypoint x="1404" y="190" />
+        <di:waypoint x="1410" y="190" />
+        <di:waypoint x="1440" y="190" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_send_escalar_msg_recv_n2_di" bpmnElement="MessageFlow_send_escalar_msg_recv_n2">
+        <di:waypoint x="1380" y="505" />
+        <di:waypoint x="1410" y="505" />
+        <di:waypoint x="1410" y="505" />
+        <di:waypoint x="1410" y="720" />
+        <di:waypoint x="1410" y="720" />
+        <di:waypoint x="1440" y="720" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_send_infra_msg_recv_infra_di" bpmnElement="MessageFlow_send_infra_msg_recv_infra">
+        <di:waypoint x="2100" y="675" />
+        <di:waypoint x="2130" y="675" />
+        <di:waypoint x="2130" y="675" />
+        <di:waypoint x="2130" y="935" />
+        <di:waypoint x="2130" y="935" />
+        <di:waypoint x="2160" y="935" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_send_infra_resp_msg_recv_infra_resp_di" bpmnElement="MessageFlow_send_infra_resp_msg_recv_infra_resp">
+        <di:waypoint x="2640" y="935" />
+        <di:waypoint x="2670" y="935" />
+        <di:waypoint x="2670" y="935" />
+        <di:waypoint x="2670" y="720" />
+        <di:waypoint x="2670" y="720" />
+        <di:waypoint x="2700" y="720" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_send_solucao_user_msg_recv_solucao_di" bpmnElement="MessageFlow_send_solucao_user_msg_recv_solucao">
+        <di:waypoint x="2280" y="765" />
+        <di:waypoint x="2330" y="765" />
+        <di:waypoint x="2330" y="482" />
+        <di:waypoint x="1390" y="482" />
+        <di:waypoint x="1390" y="200" />
+        <di:waypoint x="1440" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_send_rejeicao_msg_recv_rejeicao_di" bpmnElement="MessageFlow_send_rejeicao_msg_recv_rejeicao">
+        <di:waypoint x="2100" y="155" />
+        <di:waypoint x="2130" y="155" />
+        <di:waypoint x="2130" y="155" />
+        <di:waypoint x="2130" y="675" />
+        <di:waypoint x="2130" y="675" />
+        <di:waypoint x="2160" y="675" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_send_nova_solucao_msg_recv_solucao_di" bpmnElement="MessageFlow_send_nova_solucao_msg_recv_solucao">
+        <di:waypoint x="2640" y="730" />
+        <di:waypoint x="2692" y="730" />
+        <di:waypoint x="2692" y="470" />
+        <di:waypoint x="1388" y="470" />
+        <di:waypoint x="1388" y="210" />
+        <di:waypoint x="1440" y="210" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

@@ -1,0 +1,229 @@
+<?xml version='1.0' encoding='utf-8'?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:collaboration id="Collaboration_1">
+    <bpmn:participant id="Participant_lane_funcionario" name="Novo Funcionário" processRef="Process_lane_funcionario" />
+    <bpmn:participant id="Participant_lane_rh" name="Recursos Humanos" processRef="Process_lane_rh" />
+    <bpmn:participant id="Participant_lane_ti" name="Setor de TI" processRef="Process_lane_ti" />
+    <bpmn:participant id="Participant_lane_gestor" name="Gestor de Equipe" processRef="Process_lane_gestor" />
+    <bpmn:messageFlow id="MessageFlow_t_enviar_t_receber_docs" sourceRef="t_enviar" targetRef="t_receber_docs" />
+    <bpmn:messageFlow id="MessageFlow_t_enviar_falta_t_receber_falta" sourceRef="t_enviar_falta" targetRef="t_receber_falta" />
+    <bpmn:messageFlow id="MessageFlow_t_re_enviar_t_receber_docs" sourceRef="t_re_enviar" targetRef="t_receber_docs" />
+    <bpmn:messageFlow id="MessageFlow_t_avisar_ti_t_receber_ti" sourceRef="t_avisar_ti" targetRef="t_receber_ti" />
+    <bpmn:messageFlow id="MessageFlow_t_avisar_gestor_t_receber_gestor" sourceRef="t_avisar_gestor" targetRef="t_receber_gestor" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_lane_funcionario" isExecutable="false">
+    <bpmn:startEvent id="start_msg" name="Enviar Dados Iniciais">
+      <bpmn:messageEventDefinition />
+    </bpmn:startEvent>
+    <bpmn:sendTask id="t_enviar" name="Submeter Documentação" />
+    <bpmn:receiveTask id="t_receber_falta" name="Receber Documentos Faltantes" />
+    <bpmn:sendTask id="t_re_enviar" name="Reenviar Documentação" />
+    <bpmn:sequenceFlow id="Flow_start_msg_t_enviar" sourceRef="start_msg" targetRef="t_enviar" />
+    <bpmn:sequenceFlow id="Flow_t_receber_falta_t_re_enviar" sourceRef="t_receber_falta" targetRef="t_re_enviar" />
+  </bpmn:process>
+  <bpmn:process id="Process_lane_rh" isExecutable="false">
+    <bpmn:receiveTask id="t_receber_docs" name="Receber Documentos" />
+    <bpmn:task id="t_analisar" name="Verificar Documentação" />
+    <bpmn:exclusiveGateway id="gw_completo" name="Documentação Completa?" />
+    <bpmn:task id="t_solicitar" name="Preparar Solicitação de Pendências" />
+    <bpmn:sendTask id="t_enviar_falta" name="Enviar Documentos Faltantes" />
+    <bpmn:task id="t_processar_ok" name="Registrar Aprovação de Documentos" />
+    <bpmn:sendTask id="t_avisar_ti" name="Notificar Criação de Acesso" />
+    <bpmn:sequenceFlow id="Flow_t_receber_docs_t_analisar" sourceRef="t_receber_docs" targetRef="t_analisar" />
+    <bpmn:sequenceFlow id="Flow_t_analisar_gw_completo" sourceRef="t_analisar" targetRef="gw_completo" />
+    <bpmn:sequenceFlow id="Flow_gw_completo_t_solicitar" sourceRef="gw_completo" targetRef="t_solicitar" name="Não" />
+    <bpmn:sequenceFlow id="Flow_t_solicitar_t_enviar_falta" sourceRef="t_solicitar" targetRef="t_enviar_falta" />
+    <bpmn:sequenceFlow id="Flow_gw_completo_t_processar_ok" sourceRef="gw_completo" targetRef="t_processar_ok" name="Sim" />
+    <bpmn:sequenceFlow id="Flow_t_processar_ok_t_avisar_ti" sourceRef="t_processar_ok" targetRef="t_avisar_ti" />
+  </bpmn:process>
+  <bpmn:process id="Process_lane_ti" isExecutable="false">
+    <bpmn:intermediateCatchEvent id="t_receber_ti" name="Receber Pedido de Acesso">
+      <bpmn:messageEventDefinition />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:serviceTask id="t_criar_acesso" name="Criar Contas e Credenciais" />
+    <bpmn:sendTask id="t_avisar_gestor" name="Enviar Aviso de Acessos Prontos" />
+    <bpmn:sequenceFlow id="Flow_t_receber_ti_t_criar_acesso" sourceRef="t_receber_ti" targetRef="t_criar_acesso" />
+    <bpmn:sequenceFlow id="Flow_t_criar_acesso_t_avisar_gestor" sourceRef="t_criar_acesso" targetRef="t_avisar_gestor" />
+  </bpmn:process>
+  <bpmn:process id="Process_lane_gestor" isExecutable="false">
+    <bpmn:intermediateCatchEvent id="t_receber_gestor" name="Receber Notificação de Acessos">
+      <bpmn:messageEventDefinition />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="t_apresentar" name="Apresentar Equipe ao Novo Funcionário" />
+    <bpmn:task id="t_finalizar" name="Concluir Processo de Onboarding" />
+    <bpmn:endEvent id="end_event" name="Fim do Onboarding" />
+    <bpmn:sequenceFlow id="Flow_t_receber_gestor_t_apresentar" sourceRef="t_receber_gestor" targetRef="t_apresentar" />
+    <bpmn:sequenceFlow id="Flow_t_apresentar_t_finalizar" sourceRef="t_apresentar" targetRef="t_finalizar" />
+    <bpmn:sequenceFlow id="Flow_t_finalizar_end_event" sourceRef="t_finalizar" targetRef="end_event" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_1">
+      <bpmndi:BPMNShape id="Participant_lane_funcionario_di" bpmnElement="Participant_lane_funcionario" isHorizontal="true">
+        <dc:Bounds x="100" y="80" width="2800" height="150" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_lane_rh_di" bpmnElement="Participant_lane_rh" isHorizontal="true">
+        <dc:Bounds x="100" y="250" width="2800" height="240" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_lane_ti_di" bpmnElement="Participant_lane_ti" isHorizontal="true">
+        <dc:Bounds x="100" y="510" width="2800" height="150" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_lane_gestor_di" bpmnElement="Participant_lane_gestor" isHorizontal="true">
+        <dc:Bounds x="100" y="680" width="2800" height="150" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="start_msg_di" bpmnElement="start_msg">
+        <dc:Bounds x="180" y="137" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="t_enviar_di" bpmnElement="t_enviar">
+        <dc:Bounds x="360" y="115" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="t_receber_docs_di" bpmnElement="t_receber_docs">
+        <dc:Bounds x="540" y="330" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="t_analisar_di" bpmnElement="t_analisar">
+        <dc:Bounds x="720" y="330" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="gw_completo_di" bpmnElement="gw_completo">
+        <dc:Bounds x="900" y="345" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="t_solicitar_di" bpmnElement="t_solicitar">
+        <dc:Bounds x="1080" y="285" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="t_processar_ok_di" bpmnElement="t_processar_ok">
+        <dc:Bounds x="1080" y="375" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="t_enviar_falta_di" bpmnElement="t_enviar_falta">
+        <dc:Bounds x="1260" y="285" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="t_avisar_ti_di" bpmnElement="t_avisar_ti">
+        <dc:Bounds x="1260" y="375" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="t_receber_falta_di" bpmnElement="t_receber_falta">
+        <dc:Bounds x="1440" y="115" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="t_receber_ti_di" bpmnElement="t_receber_ti">
+        <dc:Bounds x="1440" y="567" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="t_re_enviar_di" bpmnElement="t_re_enviar">
+        <dc:Bounds x="1620" y="115" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="t_criar_acesso_di" bpmnElement="t_criar_acesso">
+        <dc:Bounds x="1620" y="545" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="t_avisar_gestor_di" bpmnElement="t_avisar_gestor">
+        <dc:Bounds x="1800" y="545" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="t_receber_gestor_di" bpmnElement="t_receber_gestor">
+        <dc:Bounds x="1980" y="737" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="t_apresentar_di" bpmnElement="t_apresentar">
+        <dc:Bounds x="2160" y="715" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="t_finalizar_di" bpmnElement="t_finalizar">
+        <dc:Bounds x="2340" y="715" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="end_event_di" bpmnElement="end_event">
+        <dc:Bounds x="2520" y="737" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_start_msg_t_enviar_di" bpmnElement="Flow_start_msg_t_enviar">
+        <di:waypoint x="216" y="155" />
+        <di:waypoint x="360" y="155" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_t_receber_docs_t_analisar_di" bpmnElement="Flow_t_receber_docs_t_analisar">
+        <di:waypoint x="660" y="370" />
+        <di:waypoint x="720" y="370" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_t_analisar_gw_completo_di" bpmnElement="Flow_t_analisar_gw_completo">
+        <di:waypoint x="840" y="370" />
+        <di:waypoint x="900" y="370" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_gw_completo_t_solicitar_di" bpmnElement="Flow_gw_completo_t_solicitar">
+        <di:waypoint x="950" y="362" />
+        <di:waypoint x="980" y="362" />
+        <di:waypoint x="1010" y="362" />
+        <di:waypoint x="1010" y="317" />
+        <di:waypoint x="1050" y="317" />
+        <di:waypoint x="1080" y="317" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_t_solicitar_t_enviar_falta_di" bpmnElement="Flow_t_solicitar_t_enviar_falta">
+        <di:waypoint x="1200" y="325" />
+        <di:waypoint x="1260" y="325" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_t_receber_falta_t_re_enviar_di" bpmnElement="Flow_t_receber_falta_t_re_enviar">
+        <di:waypoint x="1560" y="155" />
+        <di:waypoint x="1620" y="155" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_gw_completo_t_processar_ok_di" bpmnElement="Flow_gw_completo_t_processar_ok">
+        <di:waypoint x="950" y="377" />
+        <di:waypoint x="980" y="377" />
+        <di:waypoint x="1019" y="377" />
+        <di:waypoint x="1019" y="422" />
+        <di:waypoint x="1050" y="422" />
+        <di:waypoint x="1080" y="422" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_t_processar_ok_t_avisar_ti_di" bpmnElement="Flow_t_processar_ok_t_avisar_ti">
+        <di:waypoint x="1200" y="415" />
+        <di:waypoint x="1260" y="415" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_t_receber_ti_t_criar_acesso_di" bpmnElement="Flow_t_receber_ti_t_criar_acesso">
+        <di:waypoint x="1476" y="585" />
+        <di:waypoint x="1620" y="585" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_t_criar_acesso_t_avisar_gestor_di" bpmnElement="Flow_t_criar_acesso_t_avisar_gestor">
+        <di:waypoint x="1740" y="585" />
+        <di:waypoint x="1800" y="585" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_t_receber_gestor_t_apresentar_di" bpmnElement="Flow_t_receber_gestor_t_apresentar">
+        <di:waypoint x="2016" y="755" />
+        <di:waypoint x="2160" y="755" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_t_apresentar_t_finalizar_di" bpmnElement="Flow_t_apresentar_t_finalizar">
+        <di:waypoint x="2280" y="755" />
+        <di:waypoint x="2340" y="755" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_t_finalizar_end_event_di" bpmnElement="Flow_t_finalizar_end_event">
+        <di:waypoint x="2460" y="755" />
+        <di:waypoint x="2520" y="755" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_t_enviar_t_receber_docs_di" bpmnElement="MessageFlow_t_enviar_t_receber_docs">
+        <di:waypoint x="480" y="150" />
+        <di:waypoint x="510" y="150" />
+        <di:waypoint x="507" y="150" />
+        <di:waypoint x="507" y="365" />
+        <di:waypoint x="510" y="365" />
+        <di:waypoint x="540" y="365" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_t_enviar_falta_t_receber_falta_di" bpmnElement="MessageFlow_t_enviar_falta_t_receber_falta">
+        <di:waypoint x="1380" y="325" />
+        <di:waypoint x="1410" y="325" />
+        <di:waypoint x="1410" y="325" />
+        <di:waypoint x="1410" y="155" />
+        <di:waypoint x="1410" y="155" />
+        <di:waypoint x="1440" y="155" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_t_re_enviar_t_receber_docs_di" bpmnElement="MessageFlow_t_re_enviar_t_receber_docs">
+        <di:waypoint x="1740" y="160" />
+        <di:waypoint x="1791" y="160" />
+        <di:waypoint x="1791" y="267" />
+        <di:waypoint x="489" y="267" />
+        <di:waypoint x="489" y="375" />
+        <di:waypoint x="540" y="375" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_t_avisar_ti_t_receber_ti_di" bpmnElement="MessageFlow_t_avisar_ti_t_receber_ti">
+        <di:waypoint x="1380" y="415" />
+        <di:waypoint x="1410" y="415" />
+        <di:waypoint x="1410" y="415" />
+        <di:waypoint x="1410" y="585" />
+        <di:waypoint x="1410" y="585" />
+        <di:waypoint x="1440" y="585" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_t_avisar_gestor_t_receber_gestor_di" bpmnElement="MessageFlow_t_avisar_gestor_t_receber_gestor">
+        <di:waypoint x="1920" y="585" />
+        <di:waypoint x="1950" y="585" />
+        <di:waypoint x="1950" y="585" />
+        <di:waypoint x="1950" y="755" />
+        <di:waypoint x="1950" y="755" />
+        <di:waypoint x="1980" y="755" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

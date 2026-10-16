@@ -1,0 +1,264 @@
+<?xml version='1.0' encoding='utf-8'?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:collaboration id="Collaboration_1">
+    <bpmn:participant id="Participant_lane_solicitante" name="Solicitante" processRef="Process_lane_solicitante" />
+    <bpmn:participant id="Participant_lane_comprador" name="Comprador" processRef="Process_lane_comprador" />
+    <bpmn:participant id="Participant_lane_financeiro" name="Financeiro" processRef="Process_lane_financeiro" />
+    <bpmn:participant id="Participant_lane_fornecedor" name="Fornecedor" processRef="Process_lane_fornecedor" />
+    <bpmn:messageFlow id="MessageFlow_send_pedido_msg_receber_pedido" sourceRef="send_pedido" targetRef="msg_receber_pedido" />
+    <bpmn:messageFlow id="MessageFlow_send_cotacao_forn_msg_receber_orcamento" sourceRef="send_cotacao_forn" targetRef="msg_receber_orcamento" />
+    <bpmn:messageFlow id="MessageFlow_send_proposta_receive_proposta" sourceRef="send_proposta" targetRef="receive_proposta" />
+    <bpmn:messageFlow id="MessageFlow_send_fatura_fin_msg_receber_fatura" sourceRef="send_fatura_fin" targetRef="msg_receber_fatura" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_lane_solicitante" isExecutable="false">
+    <bpmn:startEvent id="start_1" name="Novo Pedido Solicitado" />
+    <bpmn:userTask id="task_criar_pedido" name="Elaborar Pedido de Compra" />
+    <bpmn:sendTask id="send_pedido" name="Enviar Pedido para Comprador" />
+    <bpmn:sequenceFlow id="Flow_start_1_task_criar_pedido" sourceRef="start_1" targetRef="task_criar_pedido" />
+    <bpmn:sequenceFlow id="Flow_task_criar_pedido_send_pedido" sourceRef="task_criar_pedido" targetRef="send_pedido" />
+  </bpmn:process>
+  <bpmn:process id="Process_lane_comprador" isExecutable="false">
+    <bpmn:intermediateCatchEvent id="msg_receber_pedido" name="Pedido Recebido">
+      <bpmn:messageEventDefinition />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="task_analisar_pedido" name="Analisar Especificações" />
+    <bpmn:exclusiveGateway id="gateway_orcamento" name="Valor Alto?" />
+    <bpmn:serviceTask id="task_cotar_simples" name="Realizar Cotação Única" />
+    <bpmn:serviceTask id="task_cotar_multipla" name="Realizar Multiplas Cotações" />
+    <bpmn:parallelGateway id="gateway_juntarcotas" name="Cotações Finalizadas" />
+    <bpmn:sendTask id="send_cotacao_forn" name="Solicitar Orçamento ao Fornecedor" />
+    <bpmn:receiveTask id="receive_proposta" name="Receber Proposta Fornecedor" />
+    <bpmn:userTask id="task_selecionar_melhor" name="Selecionar Melhor Oferta" />
+    <bpmn:sendTask id="send_fatura_fin" name="Enviar Fatura para Pagamento" />
+    <bpmn:sequenceFlow id="Flow_msg_receber_pedido_task_analisar_pedido" sourceRef="msg_receber_pedido" targetRef="task_analisar_pedido" />
+    <bpmn:sequenceFlow id="Flow_task_analisar_pedido_gateway_orcamento" sourceRef="task_analisar_pedido" targetRef="gateway_orcamento" />
+    <bpmn:sequenceFlow id="Flow_gateway_orcamento_task_cotar_simples" sourceRef="gateway_orcamento" targetRef="task_cotar_simples" name="Não" />
+    <bpmn:sequenceFlow id="Flow_gateway_orcamento_task_cotar_multipla" sourceRef="gateway_orcamento" targetRef="task_cotar_multipla" name="Sim" />
+    <bpmn:sequenceFlow id="Flow_task_cotar_simples_gateway_juntarcotas" sourceRef="task_cotar_simples" targetRef="gateway_juntarcotas" />
+    <bpmn:sequenceFlow id="Flow_task_cotar_multipla_gateway_juntarcotas" sourceRef="task_cotar_multipla" targetRef="gateway_juntarcotas" />
+    <bpmn:sequenceFlow id="Flow_gateway_juntarcotas_send_cotacao_forn" sourceRef="gateway_juntarcotas" targetRef="send_cotacao_forn" />
+    <bpmn:sequenceFlow id="Flow_receive_proposta_task_selecionar_melhor" sourceRef="receive_proposta" targetRef="task_selecionar_melhor" />
+    <bpmn:sequenceFlow id="Flow_task_selecionar_melhor_send_fatura_fin" sourceRef="task_selecionar_melhor" targetRef="send_fatura_fin" />
+  </bpmn:process>
+  <bpmn:process id="Process_lane_financeiro" isExecutable="false">
+    <bpmn:intermediateCatchEvent id="msg_receber_fatura" name="Fatura Recebida">
+      <bpmn:messageEventDefinition />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="timer_pagamento" name="Aguardar Vencimento">
+      <bpmn:timerEventDefinition />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:serviceTask id="task_efetuar_pagamento" name="Efetuar Transferência Bancária" />
+    <bpmn:task id="task_notificar_conclusao" name="Registrar Conclusão do Pagamento" />
+    <bpmn:endEvent id="end_sucesso" name="Processo Concluído com Sucesso">
+      <bpmn:messageEventDefinition />
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_msg_receber_fatura_timer_pagamento" sourceRef="msg_receber_fatura" targetRef="timer_pagamento" />
+    <bpmn:sequenceFlow id="Flow_timer_pagamento_task_efetuar_pagamento" sourceRef="timer_pagamento" targetRef="task_efetuar_pagamento" />
+    <bpmn:sequenceFlow id="Flow_task_efetuar_pagamento_task_notificar_conclusao" sourceRef="task_efetuar_pagamento" targetRef="task_notificar_conclusao" />
+    <bpmn:sequenceFlow id="Flow_task_notificar_conclusao_end_sucesso" sourceRef="task_notificar_conclusao" targetRef="end_sucesso" />
+  </bpmn:process>
+  <bpmn:process id="Process_lane_fornecedor" isExecutable="false">
+    <bpmn:intermediateCatchEvent id="msg_receber_orcamento" name="Aguardar Resposta do Fornecedor">
+      <bpmn:messageEventDefinition />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="task_enviar_proposta" name="Enviar Proposta Comercial" />
+    <bpmn:sendTask id="send_proposta" name="Enviar Proposta" />
+    <bpmn:sequenceFlow id="Flow_msg_receber_orcamento_task_enviar_proposta" sourceRef="msg_receber_orcamento" targetRef="task_enviar_proposta" />
+    <bpmn:sequenceFlow id="Flow_task_enviar_proposta_send_proposta" sourceRef="task_enviar_proposta" targetRef="send_proposta" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_1">
+      <bpmndi:BPMNShape id="Participant_lane_solicitante_di" bpmnElement="Participant_lane_solicitante" isHorizontal="true">
+        <dc:Bounds x="100" y="80" width="3880" height="150" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_lane_comprador_di" bpmnElement="Participant_lane_comprador" isHorizontal="true">
+        <dc:Bounds x="100" y="250" width="3880" height="240" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_lane_financeiro_di" bpmnElement="Participant_lane_financeiro" isHorizontal="true">
+        <dc:Bounds x="100" y="510" width="3880" height="150" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_lane_fornecedor_di" bpmnElement="Participant_lane_fornecedor" isHorizontal="true">
+        <dc:Bounds x="100" y="680" width="3880" height="150" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="start_1_di" bpmnElement="start_1">
+        <dc:Bounds x="180" y="137" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_criar_pedido_di" bpmnElement="task_criar_pedido">
+        <dc:Bounds x="360" y="115" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="send_pedido_di" bpmnElement="send_pedido">
+        <dc:Bounds x="540" y="115" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="msg_receber_pedido_di" bpmnElement="msg_receber_pedido">
+        <dc:Bounds x="720" y="352" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_analisar_pedido_di" bpmnElement="task_analisar_pedido">
+        <dc:Bounds x="900" y="330" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="gateway_orcamento_di" bpmnElement="gateway_orcamento">
+        <dc:Bounds x="1080" y="345" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_cotar_simples_di" bpmnElement="task_cotar_simples">
+        <dc:Bounds x="1260" y="285" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_cotar_multipla_di" bpmnElement="task_cotar_multipla">
+        <dc:Bounds x="1260" y="375" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="gateway_juntarcotas_di" bpmnElement="gateway_juntarcotas">
+        <dc:Bounds x="1440" y="345" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="send_cotacao_forn_di" bpmnElement="send_cotacao_forn">
+        <dc:Bounds x="1620" y="330" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="msg_receber_orcamento_di" bpmnElement="msg_receber_orcamento">
+        <dc:Bounds x="1800" y="737" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_enviar_proposta_di" bpmnElement="task_enviar_proposta">
+        <dc:Bounds x="1980" y="715" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="send_proposta_di" bpmnElement="send_proposta">
+        <dc:Bounds x="2160" y="715" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="receive_proposta_di" bpmnElement="receive_proposta">
+        <dc:Bounds x="2340" y="330" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_selecionar_melhor_di" bpmnElement="task_selecionar_melhor">
+        <dc:Bounds x="2520" y="330" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="send_fatura_fin_di" bpmnElement="send_fatura_fin">
+        <dc:Bounds x="2700" y="330" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="msg_receber_fatura_di" bpmnElement="msg_receber_fatura">
+        <dc:Bounds x="2880" y="567" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="timer_pagamento_di" bpmnElement="timer_pagamento">
+        <dc:Bounds x="3060" y="567" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_efetuar_pagamento_di" bpmnElement="task_efetuar_pagamento">
+        <dc:Bounds x="3240" y="545" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_notificar_conclusao_di" bpmnElement="task_notificar_conclusao">
+        <dc:Bounds x="3420" y="545" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="end_sucesso_di" bpmnElement="end_sucesso">
+        <dc:Bounds x="3600" y="567" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_start_1_task_criar_pedido_di" bpmnElement="Flow_start_1_task_criar_pedido">
+        <di:waypoint x="216" y="155" />
+        <di:waypoint x="360" y="155" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_task_criar_pedido_send_pedido_di" bpmnElement="Flow_task_criar_pedido_send_pedido">
+        <di:waypoint x="480" y="155" />
+        <di:waypoint x="540" y="155" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_msg_receber_pedido_task_analisar_pedido_di" bpmnElement="Flow_msg_receber_pedido_task_analisar_pedido">
+        <di:waypoint x="756" y="370" />
+        <di:waypoint x="900" y="370" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_task_analisar_pedido_gateway_orcamento_di" bpmnElement="Flow_task_analisar_pedido_gateway_orcamento">
+        <di:waypoint x="1020" y="370" />
+        <di:waypoint x="1080" y="370" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_gateway_orcamento_task_cotar_simples_di" bpmnElement="Flow_gateway_orcamento_task_cotar_simples">
+        <di:waypoint x="1130" y="362" />
+        <di:waypoint x="1160" y="362" />
+        <di:waypoint x="1190" y="362" />
+        <di:waypoint x="1190" y="317" />
+        <di:waypoint x="1230" y="317" />
+        <di:waypoint x="1260" y="317" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_gateway_orcamento_task_cotar_multipla_di" bpmnElement="Flow_gateway_orcamento_task_cotar_multipla">
+        <di:waypoint x="1130" y="377" />
+        <di:waypoint x="1160" y="377" />
+        <di:waypoint x="1199" y="377" />
+        <di:waypoint x="1199" y="422" />
+        <di:waypoint x="1230" y="422" />
+        <di:waypoint x="1260" y="422" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_task_cotar_simples_gateway_juntarcotas_di" bpmnElement="Flow_task_cotar_simples_gateway_juntarcotas">
+        <di:waypoint x="1380" y="320" />
+        <di:waypoint x="1410" y="320" />
+        <di:waypoint x="1407" y="320" />
+        <di:waypoint x="1407" y="365" />
+        <di:waypoint x="1410" y="365" />
+        <di:waypoint x="1440" y="365" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_task_cotar_multipla_gateway_juntarcotas_di" bpmnElement="Flow_task_cotar_multipla_gateway_juntarcotas">
+        <di:waypoint x="1380" y="420" />
+        <di:waypoint x="1410" y="420" />
+        <di:waypoint x="1413" y="420" />
+        <di:waypoint x="1413" y="375" />
+        <di:waypoint x="1410" y="375" />
+        <di:waypoint x="1440" y="375" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_gateway_juntarcotas_send_cotacao_forn_di" bpmnElement="Flow_gateway_juntarcotas_send_cotacao_forn">
+        <di:waypoint x="1490" y="370" />
+        <di:waypoint x="1620" y="370" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_msg_receber_orcamento_task_enviar_proposta_di" bpmnElement="Flow_msg_receber_orcamento_task_enviar_proposta">
+        <di:waypoint x="1836" y="755" />
+        <di:waypoint x="1980" y="755" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_task_enviar_proposta_send_proposta_di" bpmnElement="Flow_task_enviar_proposta_send_proposta">
+        <di:waypoint x="2100" y="755" />
+        <di:waypoint x="2160" y="755" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_receive_proposta_task_selecionar_melhor_di" bpmnElement="Flow_receive_proposta_task_selecionar_melhor">
+        <di:waypoint x="2460" y="370" />
+        <di:waypoint x="2520" y="370" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_task_selecionar_melhor_send_fatura_fin_di" bpmnElement="Flow_task_selecionar_melhor_send_fatura_fin">
+        <di:waypoint x="2640" y="370" />
+        <di:waypoint x="2700" y="370" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_msg_receber_fatura_timer_pagamento_di" bpmnElement="Flow_msg_receber_fatura_timer_pagamento">
+        <di:waypoint x="2916" y="585" />
+        <di:waypoint x="3060" y="585" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_timer_pagamento_task_efetuar_pagamento_di" bpmnElement="Flow_timer_pagamento_task_efetuar_pagamento">
+        <di:waypoint x="3096" y="585" />
+        <di:waypoint x="3240" y="585" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_task_efetuar_pagamento_task_notificar_conclusao_di" bpmnElement="Flow_task_efetuar_pagamento_task_notificar_conclusao">
+        <di:waypoint x="3360" y="585" />
+        <di:waypoint x="3420" y="585" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_task_notificar_conclusao_end_sucesso_di" bpmnElement="Flow_task_notificar_conclusao_end_sucesso">
+        <di:waypoint x="3540" y="585" />
+        <di:waypoint x="3600" y="585" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_send_pedido_msg_receber_pedido_di" bpmnElement="MessageFlow_send_pedido_msg_receber_pedido">
+        <di:waypoint x="660" y="155" />
+        <di:waypoint x="690" y="155" />
+        <di:waypoint x="690" y="155" />
+        <di:waypoint x="690" y="370" />
+        <di:waypoint x="690" y="370" />
+        <di:waypoint x="720" y="370" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_send_cotacao_forn_msg_receber_orcamento_di" bpmnElement="MessageFlow_send_cotacao_forn_msg_receber_orcamento">
+        <di:waypoint x="1740" y="370" />
+        <di:waypoint x="1770" y="370" />
+        <di:waypoint x="1770" y="370" />
+        <di:waypoint x="1770" y="755" />
+        <di:waypoint x="1770" y="755" />
+        <di:waypoint x="1800" y="755" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_send_proposta_receive_proposta_di" bpmnElement="MessageFlow_send_proposta_receive_proposta">
+        <di:waypoint x="2280" y="755" />
+        <di:waypoint x="2310" y="755" />
+        <di:waypoint x="2310" y="755" />
+        <di:waypoint x="2310" y="370" />
+        <di:waypoint x="2310" y="370" />
+        <di:waypoint x="2340" y="370" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_send_fatura_fin_msg_receber_fatura_di" bpmnElement="MessageFlow_send_fatura_fin_msg_receber_fatura">
+        <di:waypoint x="2820" y="370" />
+        <di:waypoint x="2850" y="370" />
+        <di:waypoint x="2850" y="370" />
+        <di:waypoint x="2850" y="585" />
+        <di:waypoint x="2850" y="585" />
+        <di:waypoint x="2880" y="585" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

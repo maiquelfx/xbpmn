@@ -1,0 +1,1 @@
+O solicitante envia um pedido de compra. O comprador cota com fornecedores. O financeiro efetua o pagamento. O processo termina.

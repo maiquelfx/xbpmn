@@ -1,0 +1,1 @@
+O colaborador solicita uma viagem. O gestor avalia: se aprovar, a agência reserva passagem e hotel; se rejeitar, o colaborador revisa a solicitação e reenvia. Após a reserva, o colaborador recebe a confirmação. O processo termina.

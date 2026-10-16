@@ -1,0 +1,1 @@
+O RH recebe os dados do novo funcionário e verifica se a documentação está completa. Se não estiver, solicita ao funcionário o envio dos documentos que faltam. Se estiver completa, a TI cria o acesso e o gestor apresenta a equipe. O processo termina.

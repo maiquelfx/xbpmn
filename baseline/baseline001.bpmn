@@ -1,0 +1,322 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.12.0">
+  <bpmn:collaboration id="Collaboration_1">
+    <bpmn:participant id="Participant_Solicitante" name="Solicitante" processRef="Process_Solicitante" />
+    <bpmn:participant id="Participant_Comprador" name="Comprador" processRef="Process_Comprador" />
+    <bpmn:participant id="Participant_Financeiro" name="Financeiro" processRef="Process_Financeiro" />
+    <bpmn:messageFlow id="MessageFlow_Pedido" name="Enviar Pedido" sourceRef="Activity_CriarPedido" targetRef="StartEvent_Comprador" />
+    <bpmn:messageFlow id="MessageFlow_Revisao" name="Solicitar Revisão" sourceRef="Activity_AjustarPedido" targetRef="Activity_CotarFornecedores" />
+    <bpmn:messageFlow id="MessageFlow_Aprovado" name="Enviar para Pagamento" sourceRef="Activity_AprovarCotacao" targetRef="StartEvent_Financeiro" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_Solicitante" isExecutable="false">
+    <bpmn:startEvent id="StartEvent_Solicitante" name="Necessidade de Compra Identificada">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="Activity_CriarPedido" name="Elaborar Pedido de Compra">
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:incoming>Flow_RevisarNovamente</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:exclusiveGateway id="Gateway_Revisao" name="Pedido Aprovado?">
+      <bpmn:incoming>Flow_3</bpmn:incoming>
+      <bpmn:outgoing>Flow_Rejeitado</bpmn:outgoing>
+      <bpmn:outgoing>Flow_AprovadoFim</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="Activity_AjustarPedido" name="Ajustar Pedido de Compra">
+      <bpmn:incoming>Flow_Rejeitado</bpmn:incoming>
+      <bpmn:outgoing>Flow_RevisarNovamente</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="EndEvent_Solicitante" name="Processo Concluído com Sucesso">
+      <bpmn:incoming>Flow_AprovadoFim</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_Solicitante" targetRef="Activity_CriarPedido" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Activity_CriarPedido" targetRef="Activity_ReceberRetorno" />
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="Activity_ReceberRetorno" targetRef="Gateway_Revisao" />
+    <bpmn:sequenceFlow id="Flow_Rejeitado" name="Não" sourceRef="Gateway_Revisao" targetRef="Activity_AjustarPedido">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${status == 'rejeitado'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_RevisarNovamente" sourceRef="Activity_AjustarPedido" targetRef="Activity_CriarPedido" />
+    <bpmn:sequenceFlow id="Flow_AprovadoFim" name="Sim" sourceRef="Gateway_Revisao" targetRef="EndEvent_Solicitante">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${status == 'aprovado'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:intermediateCatchEvent id="Activity_ReceberRetorno" name="Aguardar Avaliação">
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_3</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_1" />
+    </bpmn:intermediateCatchEvent>
+  </bpmn:process>
+  <bpmn:process id="Process_Comprador" isExecutable="false">
+    <bpmn:startEvent id="StartEvent_Comprador" name="Pedido Recebido">
+      <bpmn:outgoing>Flow_4</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_2" />
+    </bpmn:startEvent>
+    <bpmn:task id="Activity_CotarFornecedores" name="Cotar com Fornecedores">
+      <bpmn:incoming>Flow_4</bpmn:incoming>
+      <bpmn:outgoing>Flow_5</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:boundaryEvent id="TimerEvent_PrazoCota" name="Prazo de Cotação Expirado" attachedToRef="Activity_CotarFornecedores">
+      <bpmn:outgoing>Flow_PrazoEstourado</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_1" />
+    </bpmn:boundaryEvent>
+    <bpmn:task id="Activity_AjustarCotacao" name="Rever Fornecedores Alternativos">
+      <bpmn:incoming>Flow_PrazoEstourado</bpmn:incoming>
+      <bpmn:outgoing>Flow_RetomarCotacao</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:exclusiveGateway id="Gateway_AvaliarCotacao" name="Melhor Cotação Aceitável?">
+      <bpmn:incoming>Flow_5</bpmn:incoming>
+      <bpmn:incoming>Flow_RetomarCotacao</bpmn:incoming>
+      <bpmn:outgoing>Flow_CotacaoReprovada</bpmn:outgoing>
+      <bpmn:outgoing>Flow_CotacaoAprovada</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="Activity_SolicitarRevisao" name="Solicitar Revisão ao Solicitante">
+      <bpmn:incoming>Flow_CotacaoReprovada</bpmn:incoming>
+      <bpmn:outgoing>Flow_FimCompradorRejeita</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="Activity_AprovarCotacao" name="Aprovar Cotação e Enviar para Pagamento">
+      <bpmn:incoming>Flow_CotacaoAprovada</bpmn:incoming>
+      <bpmn:outgoing>Flow_FimCompradorAprova</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="EndEvent_CompradorRejeitado" name="Pedido Retornado para Ajustes">
+      <bpmn:incoming>Flow_FimCompradorRejeita</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="EndEvent_CompradorAprovado" name="Processo no Comprador Finalizado">
+      <bpmn:incoming>Flow_FimCompradorAprova</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_4" sourceRef="StartEvent_Comprador" targetRef="Activity_CotarFornecedores" />
+    <bpmn:sequenceFlow id="Flow_5" sourceRef="Activity_CotarFornecedores" targetRef="Gateway_AvaliarCotacao" />
+    <bpmn:sequenceFlow id="Flow_PrazoEstourado" sourceRef="TimerEvent_PrazoCota" targetRef="Activity_AjustarCotacao" />
+    <bpmn:sequenceFlow id="Flow_RetomarCotacao" sourceRef="Activity_AjustarCotacao" targetRef="Gateway_AvaliarCotacao" />
+    <bpmn:sequenceFlow id="Flow_CotacaoReprovada" name="Não" sourceRef="Gateway_AvaliarCotacao" targetRef="Activity_SolicitarRevisao">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${cotacaoValida == false}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_CotacaoAprovada" name="Sim" sourceRef="Gateway_AvaliarCotacao" targetRef="Activity_AprovarCotacao">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${cotacaoValida == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_FimCompradorRejeita" sourceRef="Activity_SolicitarRevisao" targetRef="EndEvent_CompradorRejeitado" />
+    <bpmn:sequenceFlow id="Flow_FimCompradorAprova" sourceRef="Activity_AprovarCotacao" targetRef="EndEvent_CompradorAprovado" />
+  </bpmn:process>
+  <bpmn:process id="Process_Financeiro" isExecutable="false">
+    <bpmn:startEvent id="StartEvent_Financeiro" name="Dados de Pagamento Recebidos">
+      <bpmn:outgoing>Flow_6</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_3" />
+    </bpmn:startEvent>
+    <bpmn:task id="Activity_EfetuarPagamento" name="Efetuar o Pagamento ao Fornecedor">
+      <bpmn:incoming>Flow_6</bpmn:incoming>
+      <bpmn:outgoing>Flow_7</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="EndEvent_Financeiro" name="Pagamento Efetuado e Processo Encerrado">
+      <bpmn:incoming>Flow_7</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_6" sourceRef="StartEvent_Financeiro" targetRef="Activity_EfetuarPagamento" />
+    <bpmn:sequenceFlow id="Flow_7" sourceRef="Activity_EfetuarPagamento" targetRef="EndEvent_Financeiro" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_1">
+      <bpmndi:BPMNShape id="Participant_Solicitante_di" bpmnElement="Participant_Solicitante" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="1150" height="250" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_Comprador_di" bpmnElement="Participant_Comprador" isHorizontal="true">
+        <dc:Bounds x="160" y="360" width="1150" height="300" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_Financeiro_di" bpmnElement="Participant_Financeiro" isHorizontal="true">
+        <dc:Bounds x="160" y="690" width="1150" height="200" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1">
+        <di:waypoint x="258" y="180" />
+        <di:waypoint x="310" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2">
+        <di:waypoint x="410" y="180" />
+        <di:waypoint x="472" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_3">
+        <di:waypoint x="508" y="180" />
+        <di:waypoint x="575" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Rejeitado_di" bpmnElement="Flow_Rejeitado">
+        <di:waypoint x="600" y="205" />
+        <di:waypoint x="600" y="260" />
+        <di:waypoint x="680" y="260" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="605" y="233" width="21" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_RevisarNovamente_di" bpmnElement="Flow_RevisarNovamente">
+        <di:waypoint x="730" y="300" />
+        <di:waypoint x="730" y="330" />
+        <di:waypoint x="360" y="330" />
+        <di:waypoint x="360" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_AprovadoFim_di" bpmnElement="Flow_AprovadoFim">
+        <di:waypoint x="625" y="180" />
+        <di:waypoint x="1222" y="180" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="914" y="162" width="19" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="StartEvent_Solicitante_di" bpmnElement="StartEvent_Solicitante">
+        <dc:Bounds x="222" y="162" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="202" y="205" width="77" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_CriarPedido_di" bpmnElement="Activity_CriarPedido">
+        <dc:Bounds x="310" y="140" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Revisao_di" bpmnElement="Gateway_Revisao" isMarkerVisible="true">
+        <dc:Bounds x="575" y="155" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="555" y="131" width="90" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_AjustarPedido_di" bpmnElement="Activity_AjustarPedido">
+        <dc:Bounds x="680" y="220" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_Solicitante_di" bpmnElement="EndEvent_Solicitante">
+        <dc:Bounds x="1222" y="162" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1203" y="205" width="75" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0o6q8w3_di" bpmnElement="Activity_ReceberRetorno">
+        <dc:Bounds x="472" y="162" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="461" y="205" width="59" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_4_di" bpmnElement="Flow_4">
+        <di:waypoint x="258" y="470" />
+        <di:waypoint x="330" y="470" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_5_di" bpmnElement="Flow_5">
+        <di:waypoint x="430" y="470" />
+        <di:waypoint x="595" y="470" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_PrazoEstourado_di" bpmnElement="Flow_PrazoEstourado">
+        <di:waypoint x="380" y="528" />
+        <di:waypoint x="380" y="580" />
+        <di:waypoint x="440" y="580" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_RetomarCotacao_di" bpmnElement="Flow_RetomarCotacao">
+        <di:waypoint x="540" y="580" />
+        <di:waypoint x="620" y="580" />
+        <di:waypoint x="620" y="495" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_CotacaoReprovada_di" bpmnElement="Flow_CotacaoReprovada">
+        <di:waypoint x="645" y="470" />
+        <di:waypoint x="740" y="470" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="683" y="452" width="21" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_CotacaoAprovada_di" bpmnElement="Flow_CotacaoAprovada">
+        <di:waypoint x="620" y="445" />
+        <di:waypoint x="620" y="390" />
+        <di:waypoint x="900" y="390" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="625" y="415" width="19" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_FimCompradorRejeita_di" bpmnElement="Flow_FimCompradorRejeita">
+        <di:waypoint x="840" y="470" />
+        <di:waypoint x="932" y="470" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_FimCompradorAprova_di" bpmnElement="Flow_FimCompradorAprova">
+        <di:waypoint x="1000" y="390" />
+        <di:waypoint x="1092" y="390" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="StartEvent_Comprador_di" bpmnElement="StartEvent_Comprador">
+        <dc:Bounds x="222" y="452" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="198" y="495" width="85" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_CotarFornecedores_di" bpmnElement="Activity_CotarFornecedores">
+        <dc:Bounds x="330" y="430" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_AjustarCotacao_di" bpmnElement="Activity_AjustarCotacao">
+        <dc:Bounds x="440" y="540" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_AvaliarCotacao_di" bpmnElement="Gateway_AvaliarCotacao" isMarkerVisible="true">
+        <dc:Bounds x="595" y="445" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="578" y="505" width="84" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_SolicitarRevisao_di" bpmnElement="Activity_SolicitarRevisao">
+        <dc:Bounds x="740" y="430" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_AprovarCotacao_di" bpmnElement="Activity_AprovarCotacao">
+        <dc:Bounds x="900" y="350" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_CompradorRejeitado_di" bpmnElement="EndEvent_CompradorRejeitado">
+        <dc:Bounds x="932" y="452" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="914" y="495" width="73" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_CompradorAprovado_di" bpmnElement="EndEvent_CompradorAprovado">
+        <dc:Bounds x="1092" y="372" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1073" y="415" width="75" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TimerEvent_PrazoCota_di" bpmnElement="TimerEvent_PrazoCota">
+        <dc:Bounds x="362" y="492" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="339" y="535" width="83" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_6_di" bpmnElement="Flow_6">
+        <di:waypoint x="1058" y="790" />
+        <di:waypoint x="1110" y="790" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_7_di" bpmnElement="Flow_7">
+        <di:waypoint x="1210" y="790" />
+        <di:waypoint x="1262" y="790" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="StartEvent_Financeiro_di" bpmnElement="StartEvent_Financeiro">
+        <dc:Bounds x="1022" y="772" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="999" y="815" width="83" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_EfetuarPagamento_di" bpmnElement="Activity_EfetuarPagamento">
+        <dc:Bounds x="1110" y="750" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_Financeiro_di" bpmnElement="EndEvent_Financeiro">
+        <dc:Bounds x="1262" y="772" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1242" y="815" width="77" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="MessageFlow_Pedido_di" bpmnElement="MessageFlow_Pedido">
+        <di:waypoint x="360" y="220" />
+        <di:waypoint x="360" y="336" />
+        <di:waypoint x="240" y="336" />
+        <di:waypoint x="240" y="452" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="274" y="318" width="69" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_Revisao_di" bpmnElement="MessageFlow_Revisao">
+        <di:waypoint x="790" y="430" />
+        <di:waypoint x="790" y="360" />
+        <di:waypoint x="490" y="360" />
+        <di:waypoint x="490" y="198" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="602" y="342" width="81" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_Aprovado_di" bpmnElement="MessageFlow_Aprovado">
+        <di:waypoint x="950" y="430" />
+        <di:waypoint x="950" y="601" />
+        <di:waypoint x="1040" y="601" />
+        <di:waypoint x="1040" y="772" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="965" y="583" width="60" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

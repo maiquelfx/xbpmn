@@ -1,0 +1,511 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_Hotel" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.8.1">
+  <bpmn:collaboration id="Collaboration_Hotel">
+    <bpmn:participant id="Participant_Guest" name="Hóspede" processRef="Process_Guest" />
+    <bpmn:participant id="Participant_Reception" name="Recepção" processRef="Process_Reception" />
+    <bpmn:participant id="Participant_Cleaning" name="Equipe de Limpeza" processRef="Process_Cleaning" />
+    <bpmn:messageFlow id="Flow_ReqReserva" sourceRef="Activity_SolicitarReserva" targetRef:Event_ReceberSolicitacao" />
+    <bpmn:messageFlow id="Flow_SemQuarto" sourceRef:Activity_InformarSemQuarto" targetRef:Event_ReceberNegativa" />
+    <bpmn:messageFlow id="Flow_ComQuarto" sourceRef:Activity_ConfirmarReserva" targetRef:Event_ReceberConfirmacao" />
+    <bpmn:messageFlow id="Flow_EnvioDoc" sourceRef:Activity_EnviarDocs" targetRef:Event_ReceberDocs" />
+    <bpmn:messageFlow id="Flow_DocIncorreta" sourceRef:Activity_SolicitarCorrecao" targetRef:Event_ReceberSolicitacaoCorrecao" />
+    <bpmn:messageFlow id="Flow_AvisoLimpeza" sourceRef:Activity_InformarPronto" targetRef:Event_ReceberAvisoLimpeza" />
+    <bpmn:messageFlow id="Flow_EntregaChave" sourceRef:Activity_EntregarChave" targetRef:Event_ReceberChave" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_Guest" isExecutable="false">
+    <bpmn:startEvent id="StartEvent_Guest" name="Necessidade de Hospedagem">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="Activity_SolicitarReserva" name="Solicitar Reserva">
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:eventBasedGateway id="Gateway_EsperaResposta">
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_3</bpmn:outgoing>
+      <bpmn:outgoing>Flow_4</bpmn:outgoing>
+    </bpmn:eventBasedGateway>
+    <bpmn:intermediateCatchEvent id="Event_ReceberNegativa" name="Negativa Recebida">
+      <bpmn:incoming>Flow_3</bpmn:incoming>
+      <bpmn:outgoing>Flow_5</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_1" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="Event_ReceberConfirmacao" name="Confirmação Recebida">
+      <bpmn:incoming>Flow_4</bpmn:incoming>
+      <bpmn:outgoing>Flow_6</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_2" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="Event_AguardarChegada" name="Aguardar 2 dias até a chegada">
+      <bpmn:incoming>Flow_6</bpmn:incoming>
+      <bpmn:outgoing>Flow_7</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_1" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="Activity_EnviarDocs" name="Apresentar Documentação">
+      <bpmn:incoming>Flow_7</bpmn:incoming>
+      <bpmn:incoming>Flow_CorrecaoFeita</bpmn:incoming>
+      <bpmn:outgoing>Flow_8</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="Event_ReceberSolicitacaoCorrecao" name="Solicitação de Correção">
+      <bpmn:incoming>Flow_9</bpmn:incoming>
+      <bpmn:outgoing>Flow_10</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_3" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="Activity_CorrigirDocs" name="Corrigir Documentação">
+      <bpmn:incoming>Flow_10</bpmn:incoming>
+      <bpmn:outgoing>Flow_CorrecaoFeita</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="Event_ReceberChave" name="Chave Recebida">
+      <bpmn:incoming>Flow_11</bpmn:incoming>
+      <bpmn:outgoing>Flow_12</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_4" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:endEvent id="EndEvent_GuestSuccess" name="Hospedagem Iniciada">
+      <bpmn:incoming>Flow_12</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="EndEvent_GuestCancel" name="Processo Cancelado">
+      <bpmn:incoming>Flow_5</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_Guest" targetRef="Activity_SolicitarReserva" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Activity_SolicitarReserva" targetRef="Gateway_EsperaResposta" />
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="Gateway_EsperaResposta" targetRef="Event_ReceberNegativa" />
+    <bpmn:sequenceFlow id="Flow_4" sourceRef="Gateway_EsperaResposta" targetRef="Event_ReceberConfirmacao" />
+    <bpmn:sequenceFlow id="Flow_5" sourceRef="Event_ReceberNegativa" targetRef="EndEvent_GuestCancel" />
+    <bpmn:sequenceFlow id="Flow_6" sourceRef="Event_ReceberConfirmacao" targetRef="Event_AguardarChegada" />
+    <bpmn:sequenceFlow id="Flow_7" sourceRef="Event_AguardarChegada" targetRef="Activity_EnviarDocs" />
+    <bpmn:sequenceFlow id="Flow_8" sourceRef="Activity_EnviarDocs" targetRef="Event_ReceberSolicitacaoCorrecao" />
+    <bpmn:sequenceFlow id="Flow_9" sourceRef="Activity_EnviarDocs" targetRef="Event_ReceberChave" />
+    <bpmn:sequenceFlow id="Flow_10" sourceRef="Event_ReceberSolicitacaoCorrecao" targetRef="Activity_CorrigirDocs" />
+    <bpmn:sequenceFlow id="Flow_CorrecaoFeita" sourceRef="Activity_CorrigirDocs" targetRef="Activity_EnviarDocs" />
+    <bpmn:sequenceFlow id="Flow_11" sourceRef="Event_ReceberChave" targetRef="EndEvent_GuestSuccess" />
+    <bpmn:sequenceFlow id="Flow_12" sourceRef="Event_ReceberChave" targetRef="EndEvent_GuestSuccess" />
+  </bpmn:process>
+  <bpmn:process id="Process_Reception" isExecutable="false">
+    <bpmn:startEvent id="Event_ReceberSolicitacao" name="Solicitação Recebida">
+      <bpmn:outgoing>Flow_R1</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_5" />
+    </bpmn:startEvent>
+    <bpmn:task id="Activity_VerificarDisp" name="Verificar Disponibilidade">
+      <bpmn:incoming>Flow_R1</bpmn:incoming>
+      <bpmn:outgoing>Flow_R2</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:exclusiveGateway id="Gateway_TemQuarto" name="Há Quarto?">
+      <bpmn:incoming>Flow_R2</bpmn:incoming>
+      <bpmn:outgoing>Flow_NaoTem</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Tem</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="Activity_InformarSemQuarto" name="Informar Hóspede (Sem Quarto)">
+      <bpmn:incoming>Flow_NaoTem</bpmn:incoming>
+      <bpmn:outgoing>Flow_R3</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="EndEvent_RecepcaoFim" name="Processo Encerrado">
+      <bpmn:incoming>Flow_R3</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:task id="Activity_ConfirmarReserva" name="Confirmar Reserva">
+      <bpmn:incoming>Flow_Tem</bpmn:incoming>
+      <bpmn:outgoing>Flow_R4</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="Event_ReceberDocs" name="Receber Documentação">
+      <bpmn:incoming>Flow_R4</bpmn:incoming>
+      <bpmn:outgoing>Flow_R5</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_6" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="Gateway_DocCorreta" name="Documentação Correta?">
+      <bpmn:incoming>Flow_R5</bpmn:incoming>
+      <bpmn:outgoing>Flow_DocIncorreta_Out</bpmn:outgoing>
+      <bpmn:outgoing>Flow_DocCorreta_Out</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="Activity_SolicitarCorrecao" name="Solicitar Correção de Documentos">
+      <bpmn:incoming>Flow_DocIncorreta_Out</bpmn:incoming>
+      <bpmn:outgoing>Flow_R6</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="Event_ReceberDocsRevisao" name="Receber Docs Corrigidos">
+      <bpmn:incoming>Flow_R6</bpmn:incoming>
+      <bpmn:outgoing>Flow_R7</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_7" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="Activity_SolicitarLimpeza" name="Solicitar Limpeza do Quarto">
+      <bpmn:incoming>Flow_DocCorreta_Out</bpmn:incoming>
+      <bpmn:incoming>Flow_R7</bpmn:incoming>
+      <bpmn:outgoing>Flow_R8</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="Event_ReceberAvisoLimpeza" name="Aviso de Limpeza Concluída">
+      <bpmn:incoming>Flow_R8</bpmn:incoming>
+      <bpmn:outgoing>Flow_R9</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_8" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="Activity_EntregarChave" name="Entregar Chave ao Hóspede">
+      <bpmn:incoming>Flow_R9</bpmn:incoming>
+      <bpmn:outgoing>Flow_R10</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="EndEvent_RecepcaoSucesso" name="Check-in Finalizado">
+      <bpmn:incoming>Flow_R10</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_R1" sourceRef="Event_ReceberSolicitacao" targetRef="Activity_VerificarDisp" />
+    <bpmn:sequenceFlow id="Flow_R2" sourceRef="Activity_VerificarDisp" targetRef="Gateway_TemQuarto" />
+    <bpmn:sequenceFlow id="Flow_NaoTem" name="Não" sourceRef="Gateway_TemQuarto" targetRef="Activity_InformarSemQuarto" />
+    <bpmn:sequenceFlow id="Flow_R3" sourceRef="Activity_InformarSemQuarto" targetRef="EndEvent_RecepcaoFim" />
+    <bpmn:sequenceFlow id="Flow_Tem" name="Sim" sourceRef="Gateway_TemQuarto" targetRef="Activity_ConfirmarReserva" />
+    <bpmn:sequenceFlow id="Flow_R4" sourceRef="Activity_ConfirmarReserva" targetRef="Event_ReceberDocs" />
+    <bpmn:sequenceFlow id="Flow_R5" sourceRef="Event_ReceberDocs" targetRef="Gateway_DocCorreta" />
+    <bpmn:sequenceFlow id="Flow_DocIncorreta_Out" name="Incorreta" sourceRef="Gateway_DocCorreta" targetRef="Activity_SolicitarCorrecao" />
+    <bpmn:sequenceFlow id="Flow_R6" sourceRef="Activity_SolicitarCorrecao" targetRef="Event_ReceberDocsRevisao" />
+    <bpmn:sequenceFlow id="Flow_R7" sourceRef="Event_ReceberDocsRevisao" targetRef="Activity_SolicitarLimpeza" />
+    <bpmn:sequenceFlow id="Flow_DocCorreta_Out" name="Correta" sourceRef="Gateway_DocCorreta" targetRef="Activity_SolicitarLimpeza" />
+    <bpmn:sequenceFlow id="Flow_R8" sourceRef="Activity_SolicitarLimpeza" targetRef="Event_ReceberAvisoLimpeza" />
+    <bpmn:sequenceFlow id="Flow_R9" sourceRef="Event_ReceberAvisoLimpeza" targetRef="Activity_EntregarChave" />
+    <bpmn:sequenceFlow id="Flow_R10" sourceRef="Activity_EntregarChave" targetRef="EndEvent_RecepcaoSucesso" />
+  </bpmn:process>
+  <bpmn:process id="Process_Cleaning" isExecutable="false">
+    <bpmn:startEvent id="Event_LimpezaInicio" name="Solicitação de Limpeza Recebida">
+      <bpmn:outgoing>Flow_C1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="Activity_PrepararQuarto" name="Preparar e Higienizar Quarto">
+      <bpmn:incoming>Flow_C1</bpmn:incoming>
+      <bpmn:outgoing>Flow_C2</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="Activity_InformarPronto" name="Informar Recepção (Quarto Pronto)">
+      <bpmn:incoming>Flow_C2</bpmn:incoming>
+      <bpmn:outgoing>Flow_C3</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="EndEvent_LimpezaFim" name="Quarto Pronto">
+      <bpmn:incoming>Flow_C3</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_C1" sourceRef="Event_LimpezaInicio" targetRef="Activity_PrepararQuarto" />
+    <bpmn:sequenceFlow id="Flow_C2" sourceRef="Activity_PrepararQuarto" targetRef="Activity_InformarPronto" />
+    <bpmn:sequenceFlow id="Flow_C3" sourceRef="Activity_InformarPronto" targetRef="EndEvent_LimpezaFim" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_Hotel">
+      <bpmndi:BPMNShape id="Participant_Guest_di" bpmnElement="Participant_Guest" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="1620" height="250" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_Reception_di" bpmnElement="Participant_Reception" isHorizontal="true">
+        <dc:Bounds x="160" y="360" width="1620" height="300" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_Cleaning_di" bpmnElement="Participant_Cleaning" isHorizontal="true">
+        <dc:Bounds x="160" y="690" width="1620" height="200" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1">
+        <di:waypoint x="258" y="180" />
+        <di:waypoint x="300" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2">
+        <di:waypoint x="400" y="180" />
+        <di:waypoint x="445" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_3">
+        <di:waypoint x="470" y="155" />
+        <di:waypoint x="470" y="120" />
+        <di:waypoint x="522" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_4_di" bpmnElement="Flow_4">
+        <di:waypoint x="495" y="180" />
+        <di:waypoint x="562" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_5_di" bpmnElement="Flow_5">
+        <di:waypoint x="558" y="120" />
+        <di:waypoint x="622" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_6_di" bpmnElement="Flow_6">
+        <di:waypoint x="598" y="180" />
+        <di:waypoint x="662" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_7_di" bpmnElement="Flow_7">
+        <di:waypoint x="698" y="180" />
+        <di:waypoint x="740" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_8_di" bpmnElement="Flow_8">
+        <di:waypoint x="840" y="180" />
+        <di:waypoint x="892" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_9_di" bpmnElement="Flow_9">
+        <di:waypoint x="790" y="220" />
+        <di:waypoint x="790" y="270" />
+        <di:waypoint x="1452" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_10_di" bpmnElement="Flow_10">
+        <di:waypoint x="928" y="180" />
+        <di:waypoint x="970" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_CorrecaoFeita_di" bpmnElement="Flow_CorrecaoFeita">
+        <di:waypoint x="1020" y="220" />
+        <di:waypoint x="1020" y="240" />
+        <di:waypoint x="770" y="240" />
+        <di:waypoint x="770" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_11_di" bpmnElement="Flow_11">
+        <di:waypoint x="1488" y="270" />
+        <di:waypoint x="1552" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_12_di" bpmnElement="Flow_12">
+        <di:waypoint x="1488" y="270" />
+        <di:waypoint x="1552" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="StartEvent_Guest_di" bpmnElement="StartEvent_Guest">
+        <dc:Bounds x="222" y="162" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="199" y="205" width="82" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_SolicitarReserva_di" bpmnElement="Activity_SolicitarReserva">
+        <dc:Bounds x="300" y="140" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_EsperaResposta_di" bpmnElement="Gateway_EsperaResposta">
+        <dc:Bounds x="445" y="155" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_ReceberNegativa_di" bpmnElement="Event_ReceberNegativa">
+        <dc:Bounds x="522" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="514" y="145" width="52" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_ReceberConfirmacao_di" bpmnElement="Event_ReceberConfirmacao">
+        <dc:Bounds x="562" y="162" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="553" y="205" width="55" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_AguardarChegada_di" bpmnElement="Event_AguardarChegada">
+        <dc:Bounds x="662" y="162" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="643" y="205" width="75" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_EnviarDocs_di" bpmnElement="Activity_EnviarDocs">
+        <dc:Bounds x="740" y="140" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_ReceberSolicitacaoCorrecao_di" bpmnElement="Event_ReceberSolicitacaoCorrecao">
+        <dc:Bounds x="892" y="162" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="874" y="205" width="73" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_CorrigirDocs_di" bpmnElement="Activity_CorrigirDocs">
+        <dc:Bounds x="970" y="140" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_ReceberChave_di" bpmnElement="Event_ReceberChave">
+        <dc:Bounds x="1452" y="252" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1430" y="295" width="81" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_GuestSuccess_di" bpmnElement="EndEvent_GuestSuccess">
+        <dc:Bounds x="1552" y="252" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1543" y="295" width="55" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_GuestCancel_di" bpmnElement="EndEvent_GuestCancel">
+        <dc:Bounds x="622" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="613" y="145" width="54" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_R1_di" bpmnElement="Flow_R1">
+        <di:waypoint x="258" y="490" />
+        <di:waypoint x="300" y="490" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_R2_di" bpmnElement="Flow_R2">
+        <di:waypoint x="400" y="490" />
+        <di:waypoint x="445" y="490" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_NaoTem_di" bpmnElement="Flow_NaoTem">
+        <di:waypoint x="470" y="515" />
+        <di:waypoint x="470" y="580" />
+        <di:waypoint x="540" y="580" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="475" y="545" width="21" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_R3_di" bpmnElement="Flow_R3">
+        <di:waypoint x="640" y="580" />
+        <di:waypoint x="682" y="580" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Tem_di" bpmnElement="Flow_Tem">
+        <di:waypoint x="495" y="490" />
+        <di:waypoint x="540" y="490" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="508" y="472" width="19" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_R4_di" bpmnElement="Flow_R4">
+        <di:waypoint x="640" y="490" />
+        <di:waypoint x="742" y="490" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_R5_di" bpmnElement="Flow_R5">
+        <di:waypoint x="778" y="490" />
+        <di:waypoint x="825" y="490" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_DocIncorreta_Out_di" bpmnElement="Flow_DocIncorreta_Out">
+        <di:waypoint x="850" y="465" />
+        <di:waypoint x="850" y="410" />
+        <di:waypoint x="900" y="410" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="858" y="435" width="44" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_R6_di" bpmnElement="Flow_R6">
+        <di:waypoint x="1000" y="410" />
+        <di:waypoint x="1052" y="410" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_R7_di" bpmnElement="Flow_R7">
+        <di:waypoint x="1088" y="410" />
+        <di:waypoint x="1130" y="410" />
+        <di:waypoint x="1130" y="465" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_DocCorreta_Out_di" bpmnElement="Flow_DocCorreta_Out">
+        <di:waypoint x="875" y="490" />
+        <di:waypoint x="1105" y="490" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="972" y="472" width="37" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_R8_di" bpmnElement="Flow_R8">
+        <di:waypoint x="1155" y="490" />
+        <di:waypoint x="1222" y="490" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_R9_di" bpmnElement="Flow_R9">
+        <di:waypoint x="1258" y="490" />
+        <di:waypoint x="1310" y="490" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_R10_di" bpmnElement="Flow_R10">
+        <di:waypoint x="1410" y="490" />
+        <di:waypoint x="1462" y="490" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Event_ReceberSolicitacao_di" bpmnElement="Event_ReceberSolicitacao">
+        <dc:Bounds x="222" y="472" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="211" y="515" width="59" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_VerificarDisp_di" bpmnElement="Activity_VerificarDisp">
+        <dc:Bounds x="300" y="450" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_TemQuarto_di" bpmnElement="Gateway_TemQuarto" isMarkerVisible="true">
+        <dc:Bounds x="445" y="465" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="441" y="441" width="58" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_InformarSemQuarto_di" bpmnElement="Activity_InformarSemQuarto">
+        <dc:Bounds x="540" y="540" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_RecepcaoFim_di" bpmnElement="EndEvent_RecepcaoFim">
+        <dc:Bounds x="682" y="562" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="674" y="605" width="53" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_ConfirmarReserva_di" bpmnElement="Activity_ConfirmarReserva">
+        <dc:Bounds x="540" y="450" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_ReceberDocs_di" bpmnElement="Event_ReceberDocs">
+        <dc:Bounds x="742" y="472" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="729" y="515" width="63" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_DocCorreta_di" bpmnElement="Gateway_DocCorreta" isMarkerVisible="true">
+        <dc:Bounds x="825" y="465" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="815" y="522" width="71" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_SolicitarCorrecao_di" bpmnElement="Activity_SolicitarCorrecao">
+        <dc:Bounds x="900" y="370" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_ReceberDocsRevisao_di" bpmnElement="Event_ReceberDocsRevisao">
+        <dc:Bounds x="1052" y="392" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1038" y="435" width="65" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_SolicitarLimpeza_di" bpmnElement="Activity_SolicitarLimpeza">
+        <dc:Bounds x="1105" y="450" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_ReceberAvisoLimpeza_di" bpmnElement="Event_ReceberAvisoLimpeza">
+        <dc:Bounds x="1222" y="472" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1203" y="515" width="75" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_EntregarChave_di" bpmnElement="Activity_EntregarChave">
+        <dc:Bounds x="1310" y="450" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_RecepcaoSucesso_di" bpmnElement="EndEvent_RecepcaoSucesso">
+        <dc:Bounds x="1462" y="472" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1454" y="515" width="53" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_C1_di" bpmnElement="Flow_C1">
+        <di:waypoint x="1158" y="770" />
+        <di:waypoint x="1200" y="770" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C2_di" bpmnElement="Flow_C2">
+        <di:waypoint x="1300" y="770" />
+        <di:waypoint x="1340" y="770" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C3_di" bpmnElement="Flow_C3">
+        <di:waypoint x="1440" y="770" />
+        <di:waypoint x="1482" y="770" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Event_LimpezaInicio_di" bpmnElement="Event_LimpezaInicio">
+        <dc:Bounds x="1122" y="752" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1101" y="795" width="79" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_PrepararQuarto_di" bpmnElement="Activity_PrepararQuarto">
+        <dc:Bounds x="1200" y="730" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_InformarPronto_di" bpmnElement="Activity_InformarPronto">
+        <dc:Bounds x="1340" y="730" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_LimpezaFim_di" bpmnElement="EndEvent_LimpezaFim">
+        <dc:Bounds x="1482" y="752" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1466" y="795" width="69" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_ReqReserva_di" bpmnElement="Flow_ReqReserva">
+        <di:waypoint x="350" y="220" />
+        <di:waypoint x="350" y="346" />
+        <di:waypoint x="240" y="346" />
+        <di:waypoint x="240" y="472" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_SemQuarto_di" bpmnElement="Flow_SemQuarto">
+        <di:waypoint x="590" y="540" />
+        <di:waypoint x="590" y="360" />
+        <di:waypoint x="540" y="360" />
+        <di:waypoint x="540" y="138" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ComQuarto_di" bpmnElement="Flow_ComQuarto">
+        <di:waypoint x="580" y="450" />
+        <di:waypoint x="580" y="198" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_EnvioDoc_di" bpmnElement="Flow_EnvioDoc">
+        <di:waypoint x="760" y="220" />
+        <di:waypoint x="760" y="472" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_DocIncorreta_di" bpmnElement="Flow_DocIncorreta">
+        <di:waypoint x="950" y="370" />
+        <di:waypoint x="950" y="275" />
+        <di:waypoint x="910" y="275" />
+        <di:waypoint x="910" y="198" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_AvisoLimpeza_di" bpmnElement="Flow_AvisoLimpeza">
+        <di:waypoint x="1390" y="730" />
+        <di:waypoint x="1390" y="610" />
+        <di:waypoint x="1240" y="610" />
+        <di:waypoint x="1240" y="508" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_EntregaChave_di" bpmnElement="Flow_EntregaChave">
+        <di:waypoint x="1360" y="450" />
+        <di:waypoint x="1360" y="360" />
+        <di:waypoint x="1470" y="360" />
+        <di:waypoint x="1470" y="288" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
